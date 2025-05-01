@@ -16,6 +16,7 @@ type = [
     "mypy>=1.15.0",
     "types-colorama>=0.4.15.20240311",
     "types-requests>=2.32.0.20241016",
+    "types-tqdm>=4.67.0.20250417",
 ]
 lint = ["ruff>=0.9.7"]
 

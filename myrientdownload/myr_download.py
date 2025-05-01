@@ -1,6 +1,7 @@
 """Handle downloading files from Myrient."""
 
 import os
+from pathlib import Path
 from urllib.parse import quote  # Add this for URL encoding
 
 import requests
@@ -13,7 +14,7 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 
-def download_file(url, destination):
+def download_file(url: str, destination: Path) -> bool:
     """Download an individual file."""
     try:
         encoded_url = quote(url, safe=":/")
@@ -21,7 +22,7 @@ def download_file(url, destination):
         response.raise_for_status()
         total_size = int(response.headers.get("content-length", 0))
 
-        with open(destination, "wb") as f, tqdm(total=total_size, unit="iB", unit_scale=True) as pbar:
+        with destination.open("wb") as f, tqdm(total=total_size, unit="iB", unit_scale=True) as pbar:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     size = f.write(chunk)
