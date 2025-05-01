@@ -1,6 +1,5 @@
 """Handle downloading files from Myrient."""
 
-import os
 from pathlib import Path
 from urllib.parse import quote  # Add this for URL encoding
 
@@ -35,17 +34,25 @@ def download_file(url: str, destination: Path) -> bool:
     return True
 
 
-def download_files(filtered_files, base_url, download_dir, system, skip_existing=True):
+def download_files(
+    filtered_files: list,
+    base_url: str,
+    download_dir: Path,
+    system: str,
+    *,
+    skip_existing: bool = True,
+) -> None:
+    """Download files from Myrient based on the filtered list."""
     # Create system-specific directory
-    system_dir = os.path.join(download_dir, system)
-    os.makedirs(system_dir, exist_ok=True)
+    system_dir = Path(download_dir) / system
+    system_dir.mkdir(parents=True, exist_ok=True)
 
     for file_name in tqdm(filtered_files, desc="Processing files", unit="file"):
         # Put files in their system directory
-        zip_file = os.path.join(system_dir, file_name)
+        zip_file = system_dir / file_name
 
-        if skip_existing and os.path.exists(zip_file):
-            print(f"Skipping {file_name} - already exists")
+        if skip_existing and zip_file.exists():
+            logger.info("Skipping %s - already exists", file_name)
             continue
 
         # Download the file

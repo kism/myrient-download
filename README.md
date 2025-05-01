@@ -1,61 +1,32 @@
 # Myrient ROM Downloader
 
-Adaptation of this repo: https://github.com/secretx51/myrient-rsync
+Adaptation of this repo:
+
+- https://github.com/secretx51/myrient-rsync
+- https://github.com/TuckerWarlock/myrient-download
 
 A Python script to download ROM files from Myrient's collection. The script allows you to specify multiple systems and filter games based on region, type, and other criteria.
 
-## Prerequisites
+## Run (DEV)
 
-- Python 3.12+
+Setup
 
-Install dependencies using:
 ```bash
-pip install -r requirements.txt
+uv venv
+source .venv/bin/activate
+uv sync
 ```
 
-## Configuration
+Run
 
-Configure the script by modifying these variables at the top:
-
-```python
-MYRIENT_URL = ''
-DOWNLOAD_DIR = r'\\SERVER-NAME\Share Path'  # Use raw string for network paths
-EXTRACT_ZIP = False  # Keep files as zips
-SKIP_EXISTING = True  # Skip files that already exist
-SYSTEMS = [  # Specify systems to download
-    "Atari 7800",
-    "Video CD"
-]
-GAME_WHITELIST = ["(USA)"]  # Only download USA games
-GAME_BLACKLIST = ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"]  # Skip these
-```
-
-### Available Options:
-
-- `SYSTEMS`: List of systems to download. Leave empty to use whitelist/blacklist
-- `DOWNLOAD_DIR`: Directory for downloads (supports network paths)
-- `EXTRACT_ZIP`: Whether to extract zip files after download (default: False)
-- `SKIP_EXISTING`: Skip files that already exist (default: True)
-- `GAME_WHITELIST`: Only download games containing these terms
-- `GAME_BLACKLIST`: Skip games containing these terms
-
-## Usage
-
-1. Configure the variables as needed
-2. Run the script:
 ```bash
-python myrient_downloader.py
+python -m myrientdownload --config config.json
 ```
-
-The script will:
-1. Create system-specific folders in your download directory
-2. Download matching games for each system
-3. Show progress bars for downloads
-4. Skip existing files if enabled
 
 ## Example Directory Structure
 
 For the configuration shown above, files will be organized as:
+
 ```
 Share Path/
 ├── Atari - 7800/
