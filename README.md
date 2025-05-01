@@ -15,6 +15,10 @@ Install with either pipx or uv
 
 `uv tool install git+https://github.com/kism/myrient-download`
 
+Run
+
+`myrient-download --config config.json`
+
 ## Run (Developers)
 
 Setup
