@@ -90,6 +90,8 @@ def setup_logger(
         log_path: Path to log to.
         in_logger: Logger to configure, useful for testing.
     """
+    logging.getLogger("urllib3").setLevel(logging.WARNING)  # Bit noisy when set to info, used by requests module.
+
     if not in_logger:  # in_logger should only exist when testing with PyTest.
         in_logger = logging.getLogger()  # Get the root logger
 

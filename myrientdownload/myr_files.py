@@ -14,6 +14,7 @@ logger = get_logger(__name__)
 def get_files_list(url: str) -> list[str]:
     """Get the list of files from the Myrient website."""
     logger.info("Getting file list from: %s", url)
+    files = []
     try:
         # Encode URL properly
         encoded_url = quote(url, safe=":/")
@@ -21,17 +22,18 @@ def get_files_list(url: str) -> list[str]:
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, "html.parser")
-        files = []
         # Look for links in the table with id='list'
         table = soup.find("table", id="list")
         if table:
-            for link in table.find_all("a"): # type: ignore[attr-defined] # God knows
+            for link in table.find_all("a"):  # type: ignore[attr-defined] # God knows
                 href = link.get("title")  # Use title instead of href
                 if href and href.endswith(".zip"):
                     files.append(href)
 
     except Exception:
         logger.exception("Error getting file list")
-        return []
+
+    logger.trace("Files found: %s", files)
+    logger.debug("Found %d files", len(files))
 
     return files

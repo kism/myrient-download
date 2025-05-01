@@ -21,9 +21,16 @@ def main() -> None:
         default="config.toml",
         help="Path to the configuration file (default: config.toml)",
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        help="Set the logging level (default: INFO)",
+    )
 
     args = parser.parse_args()
 
+    setup_logger(args.log_level)
     config = load_config(args.config)
 
     for system in config.systems:
