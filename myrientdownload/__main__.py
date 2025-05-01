@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 def main():
     # Process each system
     for system in DEFAULT_SETTINGS["systems"]:
-        system_url = f"{DEFAULT_SETTINGS['myrinet_url']}{system}/"
+        system_url = f"{DEFAULT_SETTINGS['myrinet_url']}/{DEFAULT_SETTINGS['myrinet_path']}/{system}/"
         files_list = get_files_list(system_url)
 
         # Apply filters
@@ -31,7 +31,7 @@ def main():
             download_files(
                 filtered_files,
                 system_url,
-                DEFAULT_SETTINGS["DOWNLOAD_DIR"],
+                DEFAULT_SETTINGS["download_dir"],
                 system,
                 skip_existing=DEFAULT_SETTINGS["skip_existing"],
             )

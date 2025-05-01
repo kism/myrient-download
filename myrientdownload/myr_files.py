@@ -5,13 +5,13 @@ from urllib.parse import quote  # Add this for URL encoding
 import requests
 
 from .constants import HTTP_HEADERS, REQUESTS_TIMEOUT
-
 from .logger import get_logger
+
 logger = get_logger(__name__)
 
 
 def get_files_list(url):
-    print(f"Getting file list from: {url}")
+    logger.info(f"Getting file list from: {url}")
     try:
         # Encode URL properly
         encoded_url = quote(url, safe=":/")
@@ -30,6 +30,6 @@ def get_files_list(url):
                 if href and href.endswith(".zip"):
                     files.append(href)
         return files
-    except Exception as e:
-        logger.info(f"Error getting file list: {e}")
+    except Exception:
+        logger.exception("Error getting file list")
         return []
