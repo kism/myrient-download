@@ -7,7 +7,15 @@ Adaptation of this repo:
 
 A Python script to download ROM files from Myrient's collection. The script allows you to specify multiple systems and filter games based on region, type, and other criteria.
 
-## Run (DEV)
+## Run
+
+Install with either pipx or uv
+
+`pipx install git+https://github.com/kism/myrient-download`
+
+`uv tool install git+https://github.com/kism/myrient-download`
+
+## Run (Developers)
 
 Setup
 
