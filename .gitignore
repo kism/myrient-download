@@ -1,6 +1,6 @@
 # This repo
 output
-config.json
+config.toml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

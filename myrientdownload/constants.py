@@ -9,10 +9,10 @@ DEFAULT_CONFIG = {
         "Nintendo - Nintendo Entertainment System (Headered)",
         "Nintendo - Super Nintendo Entertainment System",
     ],
-    "system_whitelist": [],
-    "system_blacklist": [],
-    "game_whitelist": ["(USA)"],
-    "game_blacklist": ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"],
+    "system_allow_list": [],
+    "system_disallow_list": [],
+    "game_allow_list": ["(USA)"],
+    "game_disallow_list": ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"],
 }
 
 HTTP_HEADERS = {

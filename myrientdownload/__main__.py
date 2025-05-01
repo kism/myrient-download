@@ -18,8 +18,8 @@ def main() -> None:
         "-c",
         "--config",
         type=str,
-        default="config.json",
-        help="Path to the configuration file (default: config.json)",
+        default="config.toml",
+        help="Path to the configuration file (default: config.toml)",
     )
 
     args = parser.parse_args()

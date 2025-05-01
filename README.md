@@ -17,7 +17,7 @@ Install with either pipx or uv
 
 Run
 
-`myrient-download --config config.json`
+`myrient-download --config config.toml`
 
 ## Run (Developers)
 
@@ -39,7 +39,7 @@ python -m myrientdownload --config config.json
 
 For the configuration shown above, files will be organized as:
 
-```
+```text
 Share Path/
 ├── Atari - 7800/
 │   └── Dark Chambers (USA).zip
@@ -56,6 +56,7 @@ Share Path/
 - Skips existing files
 - Handles network paths
 - Keeps original zip files intact
+- Load settings from a config file
 
 ## Notes
 
