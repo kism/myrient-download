@@ -1,9 +1,9 @@
 [project]
 name = "myrient-download"
 version = "0.1.0"
-description = "Add your description here"
+description = "Download Files from Myrient"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.13.4",
     "colorama>=0.4.6",
@@ -26,10 +26,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 
-packages = ["spotifyarchiver"]
+packages = ["myrientdownload"]
 
 [project.scripts]
-spotify-archiver = "spotifyarchiver:__main__.main"
+myrient-download = "myrientdownload:__main__.main"
 
 [tool.uv]
 default-groups = ["type", "lint"]
@@ -96,20 +96,12 @@ indent-style = "space"
 docstring-code-format = true
 docstring-code-line-length = 40
 
-[tool.pytest.ini_options]
-addopts = [
-    "--cov-context=test",
-    "--cov=spotifyarchiver",
-    "--cov-report=term",
-    "--cov-report=html",
-]
-testpaths = ["tests"]
 
 [tool.coverage.html]
 show_contexts = true
 
 [tool.mypy]
-files = ["spotifyarchiver", "tests"]
+files = ["myrientdownload", "tests"]
 namespace_packages = true
 explicit_package_bases = true
 show_error_codes = true

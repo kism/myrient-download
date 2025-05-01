@@ -1,8 +1,8 @@
 """Main entry point for CLI."""
 
-import os
+import argparse
 
-from .constants import DEFAULT_SETTINGS
+from .config import load_config
 from .logger import get_logger, setup_logger
 from .myr_download import download_files
 from .myr_files import get_files_list
@@ -11,35 +11,47 @@ setup_logger()
 logger = get_logger(__name__)
 
 
-def main():
-    # Process each system
-    for system in DEFAULT_SETTINGS["systems"]:
-        system_url = f"{DEFAULT_SETTINGS['myrinet_url']}/{DEFAULT_SETTINGS['myrinet_path']}/{system}/"
+def main() -> None:
+    """Main CLI."""
+    parser = argparse.ArgumentParser(description="Download files from Myrient.")
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        default="config.json",
+        help="Path to the configuration file (default: config.json)",
+    )
+
+    args = parser.parse_args()
+
+    config = load_config(args.config)
+
+    for system in config["systems"]:
+        system_url = f"{config['myrinet_url']}/{config['myrinet_path']}/{system}/"
         files_list = get_files_list(system_url)
 
         # Apply filters
         filtered_files = [
             f
             for f in files_list
-            if any(term in f for term in DEFAULT_SETTINGS["game_whitelist"])
-            and not any(term in f for term in DEFAULT_SETTINGS["game_blacklist"])
+            if any(term in f for term in config["game_whitelist"])
+            and not any(term in f for term in config["game_blacklist"])
         ]
 
         if filtered_files:
-            logger.info(f"\nFound {len(filtered_files)} matching files for {system}")
+            msg = f"\nFound {len(filtered_files)} matching files for {system}"
+            logger.info(msg)
             # Pass the system name to download_files
             download_files(
                 filtered_files,
                 system_url,
-                DEFAULT_SETTINGS["download_dir"],
+                config["download_dir"],
                 system,
-                skip_existing=DEFAULT_SETTINGS["skip_existing"],
+                skip_existing=config["skip_existing"],
             )
         else:
-            logger.info(f"No matching files found for {system}")
+            logger.info("No matching files found for %s", system)
 
 
 if __name__ == "__main__":
-    # Make sure base download directory exists
-    os.makedirs(DEFAULT_SETTINGS["download_dir"], exist_ok=True)
     main()

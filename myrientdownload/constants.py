@@ -1,6 +1,6 @@
 """Constants for the Myrient Download Script."""
 
-DEFAULT_SETTINGS = {
+DEFAULT_CONFIG = {
     "myrinet_url": "https://myrient.erista.me/files",
     "myrinet_path": "No-Intro",
     # "download_dir": r"\\TUCKER-DESKTOP\Shared S Drive",

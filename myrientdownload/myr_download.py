@@ -1,34 +1,37 @@
 """Handle downloading files from Myrient."""
 
 import os
+from urllib.parse import quote  # Add this for URL encoding
 
 import requests
+from requests.exceptions import ConnectTimeout, ReadTimeout
 from tqdm import tqdm
 
 from .constants import HTTP_HEADERS, REQUESTS_TIMEOUT
-
 from .logger import get_logger
 
 logger = get_logger(__name__)
 
 
 def download_file(url, destination):
+    """Download an individual file."""
     try:
         encoded_url = quote(url, safe=":/")
         response = requests.get(encoded_url, headers=HTTP_HEADERS, stream=True, timeout=REQUESTS_TIMEOUT)
         response.raise_for_status()
         total_size = int(response.headers.get("content-length", 0))
 
-        with open(destination, "wb") as f:
-            with tqdm(total=total_size, unit="iB", unit_scale=True) as pbar:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        size = f.write(chunk)
-                        pbar.update(size)
-        return True
-    except Exception as e:
-        print(f"Error downloading {url}: {e}")
+        with open(destination, "wb") as f, tqdm(total=total_size, unit="iB", unit_scale=True) as pbar:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    size = f.write(chunk)
+                    pbar.update(size)
+
+    except (ConnectTimeout, ReadTimeout):
+        logger.exception("Error downloading %s", url)
         return False
+
+    return True
 
 
 def download_files(filtered_files, base_url, download_dir, system, skip_existing=True):
@@ -46,6 +49,6 @@ def download_files(filtered_files, base_url, download_dir, system, skip_existing
 
         # Download the file
         file_url = f"{base_url}{file_name}"
-        print(f"Downloading: {file_name}")
+        logger.info("Downloading: %s", file_name)
         if download_file(file_url, zip_file):
-            print(f"Successfully downloaded: {file_name}")
+            logger.info("Successfully downloaded: %s", file_name)
