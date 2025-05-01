@@ -1,11 +1,13 @@
 """Constants for the Myrient Download Script."""
 
+from pathlib import Path
+
 from .config import Config
 
 DEFAULT_CONFIG: Config = {
     "myrinet_url": "https://myrient.erista.me/files",
     "myrinet_path": "No-Intro",
-    "download_dir": "output",
+    "download_dir": Path("output"),
     "skip_existing": True,
     "systems": [
         "Nintendo - Nintendo Entertainment System (Headered)",

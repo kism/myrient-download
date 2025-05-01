@@ -11,7 +11,7 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 
-def get_files_list(url: str) -> list:
+def get_files_list(url: str) -> list[str]:
     """Get the list of files from the Myrient website."""
     logger.info("Getting file list from: %s", url)
     try:

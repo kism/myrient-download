@@ -35,7 +35,16 @@ def load_config(config_path_str: str) -> Config:
     with config_path.open() as f:
         config_dict = tomlkit.load(f)
 
-    return config_dict
+    # Ensure download_dir is a Path object
+    if "download_dir" in config_dict:
+        config_dict["download_dir"] = Path(str(config_dict["download_dir"])).expanduser().resolve()
+
+    for key in DEFAULT_CONFIG:
+        if key not in config_dict:
+            logger.warning("Missing key '%s' in configuration. Using default value.", key)
+            config_dict[key] = DEFAULT_CONFIG[key]
+
+    return Config(**config_dict)
 
 
 def write_config(config_path: Path, config: Config) -> None:

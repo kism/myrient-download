@@ -35,7 +35,7 @@ def download_file(url: str, destination: Path) -> bool:
 
 
 def download_files(
-    filtered_files: list,
+    filtered_files: list[str],
     base_url: str,
     download_dir: Path,
     system: str,
