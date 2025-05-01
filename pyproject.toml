@@ -1,0 +1,128 @@
+[project]
+name = "myrient-download"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.13.4",
+    "requests>=2.32.3",
+    "tqdm>=4.67.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.7",
+]
+
+
+[dependency-groups]
+dev = ["pyright>=1.1.394"]
+type = [
+    "mypy>=1.15.0",
+    "types-colorama>=0.4.15.20240311",
+    "types-requests>=2.32.0.20241016",
+]
+lint = ["ruff>=0.9.7"]
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+
+packages = ["spotifyarchiver"]
+
+[project.scripts]
+spotify-archiver = "spotifyarchiver:__main__.main"
+
+[tool.uv]
+default-groups = ["dev", "type", "test", "lint"]
+
+[tool.uv.sources]
+mutagen = { git = "https://github.com/kism/mutagen", branch = "fix-ogg-page-header" } # Fixes: https://github.com/quodlibet/mutagen/issues/591
+
+
+[tool.ruff]
+cache-dir = "~/.cache/ruff"
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+extend-fixable = ["B", "I001"] # KG I think this means something...
+extend-unsafe-fixes = [
+    "F401",
+] # KG I don't like that this is fixed automatically (this doesn't work?)
+select = ["ALL"] # KG Include absolutely all of Ruff's rules.
+ignore = [
+    # Modules
+    "DJ",  # KG Django not required
+    "DTZ", # KG no need to specify timezone for time objects
+
+    # Specific rules
+    # "ANN101", # KG Why define self type for object functions...
+    "TD002",  # KG Verbose TODO, only I work on this project
+    "TD003",  # KG Verbose TODO, only I work on this project
+    "ISC001", # KG conflict in the formatter
+    "COM812", # KG conflict in the formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = [
+    # Modules
+    "ARG", # KG Unused function args -> fixtures nevertheless are functionally relevant
+    "FBT", # KG Don't care about booleans as positional arguments in tests, e.g. via @pytest.mark.parametrize()
+    "ANN", # KG Don't care about annotations in tests
+    "D",   # KG Don't care about docstrings in tests
+
+    # Specific rules
+    "S101",    # KG asserts allowed in tests.
+    "ANN201",  # KG Not really needed for pytest.
+    "SLF001",  # KG Accessing private members is needed for testing.
+    "INP001",  # KG __init__.py not needed for PyTest.
+    "PT004",   # KG monkeypatch doesn't return.
+    "S311",    # KG I'll assume no real crypto will be done in PyTest.
+    "S105",    # KG Hardcoded fake passwords are fine in tests.
+    "PLR0913", # KG Tests can have as many arguments as they want.
+    "ANN401",  # KG Tests can return typing.Any.
+    "BLE001",  # KG Tests can use BaseException.
+]
+
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+docstring-code-line-length = 40
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov-context=test",
+    "--cov=spotifyarchiver",
+    "--cov-report=term",
+    "--cov-report=html",
+]
+testpaths = ["tests"]
+
+[tool.coverage.html]
+show_contexts = true
+
+[tool.mypy]
+files = ["spotifyarchiver", "tests"]
+namespace_packages = true
+explicit_package_bases = true
+show_error_codes = true
+strict = false
+enable_error_code = [
+    "ignore-without-code",
+    "redundant-expr",
+    "truthy-bool",
+    "type-arg",
+]
