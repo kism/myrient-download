@@ -26,16 +26,16 @@ def main() -> None:
 
     config = load_config(args.config)
 
-    for system in config["systems"]:
-        system_url = f"{config['myrinet_url']}/{config['myrinet_path']}/{system}/"
+    for system in config.systems:
+        system_url = f"{config.myrinet_url}/{config.myrinet_path}/{system}/"
         files_list = get_files_list(system_url)
 
         # Apply filters
         filtered_files = [
             f
             for f in files_list
-            if any(term in f for term in config["game_allow_list"])
-            and not any(term in f for term in config["game_disallow_list"])
+            if any(term in f for term in config.game_allow_list)
+            and not any(term in f for term in config.game_disallow_list)
         ]
 
         if filtered_files:
@@ -45,9 +45,9 @@ def main() -> None:
             download_files(
                 filtered_files,
                 system_url,
-                config["download_dir"],
+                config.download_dir,
                 system,
-                skip_existing=config["skip_existing"],
+                skip_existing=config.skip_existing,
             )
         else:
             logger.info("No matching files found for %s", system)

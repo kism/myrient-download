@@ -1,24 +1,5 @@
 """Constants for the Myrient Download Script."""
 
-from pathlib import Path
-
-from .config import Config
-
-DEFAULT_CONFIG: Config = {
-    "myrinet_url": "https://myrient.erista.me/files",
-    "myrinet_path": "No-Intro",
-    "download_dir": Path("output"),
-    "skip_existing": True,
-    "systems": [
-        "Nintendo - Nintendo Entertainment System (Headered)",
-        "Nintendo - Super Nintendo Entertainment System",
-    ],
-    "system_allow_list": [],
-    "system_disallow_list": [],
-    "game_allow_list": ["(USA)"],
-    "game_disallow_list": ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"],
-}
-
 HTTP_HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"  # noqa: E501 # This line is just long
 }
