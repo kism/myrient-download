@@ -1,6 +1,7 @@
 """Handle loading and writing the configuration file."""
 
 from pathlib import Path
+from typing import TypedDict
 
 import tomlkit
 
@@ -10,7 +11,21 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 
-def load_config(config_path_str: str) -> dict:
+class Config(TypedDict):
+    """Configuration for the Myrient download script."""
+
+    myrinet_url: str
+    myrinet_path: str
+    download_dir: Path
+    skip_existing: bool
+    systems: list[str]
+    system_allow_list: list[str]
+    system_disallow_list: list[str]
+    game_allow_list: list[str]
+    game_disallow_list: list[str]
+
+
+def load_config(config_path_str: str) -> Config:
     """Load configuration from a JSON file."""
     config_path = Path(config_path_str).expanduser().resolve()
 
@@ -18,10 +33,12 @@ def load_config(config_path_str: str) -> dict:
         write_config(config_path, DEFAULT_CONFIG)
 
     with config_path.open() as f:
-        return tomlkit.load(f)
+        config_dict = tomlkit.load(f)
+
+    return config_dict
 
 
-def write_config(config_path: Path, config: dict) -> None:
+def write_config(config_path: Path, config: Config) -> None:
     """Write configuration to a TOML file."""
     with config_path.open("w") as f:
         tomlkit.dump(config, f)

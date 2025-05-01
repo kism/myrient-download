@@ -34,8 +34,8 @@ def main() -> None:
         filtered_files = [
             f
             for f in files_list
-            if any(term in f for term in config["game_whitelist"])
-            and not any(term in f for term in config["game_blacklist"])
+            if any(term in f for term in config["game_allow_list"])
+            and not any(term in f for term in config["game_disallow_list"])
         ]
 
         if filtered_files:

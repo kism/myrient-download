@@ -1,6 +1,8 @@
 """Constants for the Myrient Download Script."""
 
-DEFAULT_CONFIG = {
+from .config import Config
+
+DEFAULT_CONFIG: Config = {
     "myrinet_url": "https://myrient.erista.me/files",
     "myrinet_path": "No-Intro",
     "download_dir": "output",
