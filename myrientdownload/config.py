@@ -1,5 +1,6 @@
 """Handle loading and writing the configuration file."""
 
+import time
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,13 @@ class Config:
             msg = "Cannot set 'no_system_dir' to True when multiple systems are specified."
             raise ValueError(msg)
 
+        if not self.download_dir.exists():
+            logger.warning(
+                "Download directory '%s' does not exist. \nCreating it in 10 seconds.", self.download_dir.resolve()
+            )
+            time.sleep(10)
+            self.download_dir.mkdir(parents=True, exist_ok=True)
+
     def load_from_file(self, config_path: Path) -> None:
         """Load configuration from a file."""
         with config_path.open() as f:
@@ -49,7 +57,7 @@ class Config:
         config_dict: dict[str, Any] = dict(config_dict_toml)
         # Ensure download_dir is a Path object
         if "download_dir" in config_dict:
-            config_dict["download_dir"] = Path(str(config_dict["download_dir"])).expanduser().resolve()
+            config_dict["download_dir"] = Path(str(config_dict["download_dir"])).expanduser()
 
         for key in self.__dict__:
             if key not in config_dict:
@@ -57,7 +65,7 @@ class Config:
                 config_dict[key] = getattr(self, key)
 
         self.__dict__.update(config_dict)
-        self.download_dir = Path(self.download_dir).expanduser().resolve()
+        self.download_dir = Path(self.download_dir).expanduser()
 
     def write_to_file(self, config_path: Path) -> None:
         """Write configuration to a file."""
