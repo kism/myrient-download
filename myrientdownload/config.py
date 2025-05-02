@@ -19,6 +19,7 @@ class Config:
         self.myrinet_url: str = "https://myrient.erista.me/files"
         self.myrinet_path: str = "No-Intro"
         self.download_dir: Path = Path("output")
+        self.no_download_system_dir: bool = False
         self.skip_existing: bool = True
         self.systems: list[str] = [
             "Nintendo - Nintendo Entertainment System (Headered)",
@@ -31,6 +32,14 @@ class Config:
 
         if config_path:
             self.load_from_file(config_path)
+
+        self.validate_config()
+
+    def validate_config(self) -> None:
+        """Validate the configuration values."""
+        if self.no_download_system_dir and len(self.systems) > 1:
+            msg = "Cannot set 'no_system_dir' to True when multiple systems are specified."
+            raise ValueError(msg)
 
     def load_from_file(self, config_path: Path) -> None:
         """Load configuration from a file."""

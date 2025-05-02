@@ -38,18 +38,16 @@ def download_files(
     filtered_files: list[str],
     base_url: str,
     download_dir: Path,
-    system: str,
     *,
     skip_existing: bool = True,
 ) -> None:
     """Download files from Myrient based on the filtered list."""
     # Create system-specific directory
-    system_dir = Path(download_dir) / system
-    system_dir.mkdir(parents=True, exist_ok=True)
+    download_dir.mkdir(parents=True, exist_ok=True)
 
     for file_name in tqdm(filtered_files, desc="Processing files", unit="file"):
         # Put files in their system directory
-        zip_file = system_dir / file_name
+        zip_file = download_dir / file_name
 
         if skip_existing and zip_file.exists():
             logger.info("Skipping %s - already exists", file_name)
