@@ -27,7 +27,7 @@ def download_file(url: str, destination: Path) -> bool:
                     size = f.write(chunk)
                     pbar.update(size)
 
-    except (ConnectTimeout, ReadTimeout):
+    except (ConnectTimeout, ReadTimeout, requests.exceptions.ConnectionError):
         logger.exception("Error downloading %s", url)
         return False
 
