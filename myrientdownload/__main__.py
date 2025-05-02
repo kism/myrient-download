@@ -38,6 +38,8 @@ def main() -> None:
         files_list = get_files_list(system_url)
 
         # Apply filters
+        if config.game_allow_list == []:  # Small hack to allow all files if nothing is specified
+            config.game_allow_list = ["."]
         filtered_files = [
             f
             for f in files_list
