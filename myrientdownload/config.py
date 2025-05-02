@@ -5,6 +5,7 @@ from typing import Any
 
 import tomlkit
 
+from . import __url__
 from .logger import get_logger
 
 logger = get_logger(__name__)
@@ -58,6 +59,7 @@ class Config:
         temp_dict["download_dir"] = str(self.download_dir)
 
         with config_path.open("w") as f:
+            f.write(f"# Configuration file for Myrient download script {__url__}\n")
             tomlkit.dump(temp_dict, f)
         logger.info("Configuration written to '%s'", config_path)
 

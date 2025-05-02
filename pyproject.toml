@@ -1,6 +1,6 @@
 [project]
 name = "myrientdownload"
-version = "0.3.0"
+version = "0.3.1"
 description = "Download Files from Myrient"
 readme = "README.md"
 requires-python = ">=3.12"
