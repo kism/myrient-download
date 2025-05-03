@@ -64,3 +64,9 @@ Share Path/
 - Most emulators can read ROMs directly from zip files
 - Network paths should use raw strings (r"\\SERVER\Share")
 - Files are organized by system automatically
+
+## Todo
+
+- Backoff and retry
+- TOSEC and friends
+- Downloader as a class to track stats

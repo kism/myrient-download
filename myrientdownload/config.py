@@ -12,7 +12,7 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 
-class Config:
+class MyrDLConfig:
     """Configuration for the Myrient download script."""
 
     def __init__(self, config_path: Path | None) -> None:
@@ -81,15 +81,15 @@ class Config:
         logger.info("Configuration written to '%s'", config_path)
 
 
-def load_config(config_path_str: str) -> Config:
+def load_config(config_path_str: str) -> MyrDLConfig:
     """Load configuration from a JSON file."""
     config_path = Path(config_path_str).expanduser().resolve()
 
     if config_path.exists():
-        config = Config(config_path)
+        config = MyrDLConfig(config_path)
     else:
         logger.warning("Configuration file '%s' not found. Using default values.", config_path)
-        config = Config(None)
+        config = MyrDLConfig(None)
 
     config.write_to_file(config_path)
 

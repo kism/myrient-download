@@ -1,6 +1,6 @@
 """Download management for Myrinet files."""
 
-from .config import Config
+from .config import MyrDLConfig
 from .logger import get_logger
 from .myr_download import download_files
 from .myr_files import get_files_list
@@ -8,7 +8,7 @@ from .myr_files import get_files_list
 logger = get_logger(__name__)
 
 
-def download_from_system_list(config: Config) -> None:
+def download_from_system_list(config: MyrDLConfig) -> None:
     """Download files from the list of systems in the configuration."""
     for system in config.systems:
         system_url = f"{config.myrinet_url}/{config.myrinet_path}/{system}/"

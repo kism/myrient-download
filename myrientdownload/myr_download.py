@@ -4,14 +4,12 @@ from pathlib import Path
 from urllib.parse import quote  # Add this for URL encoding
 
 import requests
-from requests.exceptions import ConnectTimeout, ReadTimeout
 from tqdm import tqdm
 
 from .constants import HTTP_HEADERS, REQUESTS_TIMEOUT
 from .logger import get_logger
 
 logger = get_logger(__name__)
-
 
 def download_file(url: str, destination: Path) -> bool:
     """Download an individual file."""
@@ -27,7 +25,11 @@ def download_file(url: str, destination: Path) -> bool:
                     size = f.write(chunk)
                     pbar.update(size)
 
-    except (ConnectTimeout, ReadTimeout, requests.exceptions.ConnectionError):
+    except (
+        requests.exceptions.ConnectTimeout,
+        requests.exceptions.ReadTimeout,
+        requests.exceptions.ConnectionError,
+    ):
         logger.exception("Error downloading %s", url)
         return False
 
