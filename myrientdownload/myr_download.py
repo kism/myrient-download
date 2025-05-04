@@ -105,7 +105,10 @@ class MyrDownloader:
 
             destination_temp = destination.with_suffix(".part")
 
-            with destination_temp.open("wb") as f, tqdm(total=total_size, unit="iB", unit_scale=True) as pbar:
+            with (
+                destination_temp.open("wb") as f,
+                tqdm(total=total_size, unit="iB", unit_scale=True, ascii=" ▖▘▝▗▚▞█") as pbar,
+            ):
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         size = f.write(chunk)
@@ -142,7 +145,7 @@ class MyrDownloader:
             logger.warning("Deleting incomplete file: %s", part_file)
             part_file.unlink()
 
-        for file_name in tqdm(filtered_files, desc="Processing files", unit="file"):
+        for file_name in tqdm(filtered_files, desc="Files done", unit="file"):
             # Put files in their system directory
             output_file = download_dir / file_name
 
