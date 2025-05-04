@@ -105,7 +105,7 @@ def setup_logger(
     if not _has_file_handler(in_logger) and log_path:
         _add_file_handler(in_logger, log_path)
 
-    logger.info("Logger configuration set!")
+    logger.debug("Logger configuration set!")
 
 
 def get_logger(name: str) -> CustomLogger:
@@ -146,7 +146,6 @@ def _set_log_level(in_logger: logging.Logger, log_level: int | str) -> None:
             in_logger.setLevel(log_level)
             logger.trace("Set log level: %s", log_level)
             logger.debug("Set log level: %s", log_level)
-            logger.info("Set log level: %s", log_level)
     else:
         in_logger.setLevel(log_level)
 

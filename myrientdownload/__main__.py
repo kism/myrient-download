@@ -1,6 +1,9 @@
 """Main entry point for CLI."""
 
 import argparse
+from pathlib import Path
+
+import tomlkit
 
 from .config import load_config
 from .logger import get_logger, setup_logger
@@ -28,6 +31,9 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    print_program_info()
+
     setup_logger(args.log_level)
     config = load_config(args.config)
 
@@ -35,5 +41,21 @@ def main() -> None:
     mry_downloader.download_from_system_list()
 
 
+def print_program_info() -> None:
+    """Print program information."""
+    toml_file = Path(__file__).parent.parent / "pyproject.toml"
+    with toml_file.open("r", encoding="utf-8") as f:
+        toml_data = tomlkit.load(f)
+
+    version = toml_data.get("project", {}).get("version", "UNKNOWN")
+    description = toml_data.get("project", {}).get("description", "No description available.")
+    msg = f"myrient-download {version}, {description}"
+    logger.info(msg)
+
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        logger.info("")
+        logger.info("Download interrupted by user.")

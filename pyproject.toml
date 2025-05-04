@@ -1,7 +1,7 @@
 [project]
 name = "myrientdownload"
-version = "0.4.1"
-description = "Download Files from Myrient"
+version = "0.5.0"
+description = "A program to download files Myrient"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

@@ -1,0 +1,11 @@
+# Configuration file for Myrient download script https://github.com/kism/myrient-download
+myrinet_url = "https://myrient.erista.me/files"
+myrinet_path = "No-Intro"
+download_dir = "output"
+no_download_system_dir = false
+skip_existing = true
+systems = ["Nintendo - Nintendo Entertainment System (Headered)", "Nintendo - Super Nintendo Entertainment System"]
+system_allow_list = []
+system_disallow_list = []
+game_allow_list = ["(USA)"]
+game_disallow_list = ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"]
