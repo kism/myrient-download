@@ -1,10 +1,5 @@
 # Myrient ROM Downloader
 
-Adaptation of this repo:
-
-- https://github.com/secretx51/myrient-rsync
-- https://github.com/TuckerWarlock/myrient-download
-
 A Python script to download ROM files from Myrient's collection. The script allows you to specify multiple systems and filter games based on region, type, and other criteria.
 
 ## Run

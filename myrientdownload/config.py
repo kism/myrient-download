@@ -6,7 +6,7 @@ from typing import Any
 
 import tomlkit
 
-from . import __url__
+from . import PROGRAM_NAME, URL
 from .logger import get_logger
 
 logger = get_logger(__name__)
@@ -22,7 +22,7 @@ class MyrDLConfig:
         self.download_dir: Path = Path("output")
         self.no_download_system_dir: bool = False
         self.skip_existing: bool = True
-        self.verify_zips: bool = True # Check existing zips are valid before skipping
+        self.verify_zips: bool = True  # Check existing zips are valid before skipping
         self.systems: list[str] = [
             "Nintendo - Nintendo Entertainment System (Headered)",
             "Nintendo - Super Nintendo Entertainment System",
@@ -77,7 +77,7 @@ class MyrDLConfig:
         temp_dict["download_dir"] = str(self.download_dir)
 
         with config_path.open("w") as f:
-            f.write(f"# Configuration file for Myrient download script {__url__}\n")
+            f.write(f"# Configuration file for {PROGRAM_NAME} script {URL}\n")
             tomlkit.dump(temp_dict, f)
         logger.info("Configuration written to '%s'", config_path)
 

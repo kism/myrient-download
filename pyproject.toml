@@ -2,6 +2,11 @@
 name = "myrientdownload"
 version = "0.5.0"
 description = "A program to download files Myrient"
+authors = [
+    { name = "Kieran Gee", email = "kieran.lost.the.game@gmail.com" },
+    { name = "Trent Neilson" },
+    { name = "Tucker Warlock" },
+]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
