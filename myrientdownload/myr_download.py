@@ -1,7 +1,6 @@
 """Download management for Myrinet files."""
 
 import zipfile
-
 from pathlib import Path
 from urllib.parse import quote  # Add this for URL encoding
 
