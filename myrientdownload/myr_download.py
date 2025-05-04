@@ -107,7 +107,7 @@ class MyrDownloader:
 
             with (
                 destination_temp.open("wb") as f,
-                tqdm(total=total_size, unit="iB", unit_scale=True, ascii=" ▖▘▝▗▚▞█") as pbar,
+                tqdm(total=total_size, unit="iB", unit_scale=True, ascii=" ▖▘▝▗▚▞█", leave=False) as pbar,
             ):
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
