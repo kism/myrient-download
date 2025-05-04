@@ -52,6 +52,8 @@ Share Path/
 - Handles network paths
 - Keeps original zip files intact
 - Load settings from a config file
+- Verifies zip files
+- Partial downloads have different file names
 
 ## Notes
 
