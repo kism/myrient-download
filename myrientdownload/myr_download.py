@@ -40,6 +40,12 @@ class MyrDownloader:
         else:
             logger.warning("Unknown stat: %s", stat)
 
+    def _reset_skipped_streak(self) -> None:
+        """Check if there was a streak of skipped files."""
+        if self.skip_streak > 0:
+            logger.info("Skipped %d existing files", self.skip_streak)
+            self.skip_streak = 0
+
     def print_stats(self) -> None:
         """Print the download statistics."""
         logger.info("Download statistics:")
@@ -152,12 +158,12 @@ class MyrDownloader:
                 self.report_stat("skipped")
                 continue
 
-            if self.skip_streak > 0:
-                logger.info("Skipped %d existing files", self.skip_streak)
-                self.skip_streak = 0
+            self._reset_skipped_streak()
 
             # Download the file
             file_url = f"{base_url}{file_name}"
             logger.info("Downloading: %s", file_name)
             if self.download_file(file_url, output_file):
                 self.report_stat("downloaded")
+
+        self._reset_skipped_streak()
