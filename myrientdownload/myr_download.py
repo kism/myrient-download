@@ -32,6 +32,7 @@ class MyrDownloader:
         """Report the status of the download."""
         if stat in self.stats:
             self.stats[stat] += 1
+            logger.debug("Status: %s", stat)
         else:
             logger.warning("Unknown stat: %s", stat)
 
@@ -152,4 +153,3 @@ class MyrDownloader:
             logger.info("Downloading: %s", file_name)
             if self.download_file(file_url, output_file):
                 self.report_stat("downloaded")
-                logger.info("Successfully downloaded: %s", file_name)
