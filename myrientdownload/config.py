@@ -22,6 +22,7 @@ class MyrDLConfig:
         self.download_dir: Path = Path("output")
         self.no_download_system_dir: bool = False
         self.skip_existing: bool = True
+        self.verify_zips: bool = True # Check existing zips are valid before skipping
         self.systems: list[str] = [
             "Nintendo - Nintendo Entertainment System (Headered)",
             "Nintendo - Super Nintendo Entertainment System",
