@@ -145,7 +145,7 @@ class MyrDownloader:
             logger.warning("Deleting incomplete file: %s", part_file)
             part_file.unlink()
 
-        for file_name, n in enumerate(filtered_files):
+        for n_files_processed, file_name in enumerate(filtered_files):
             # Put files in their system directory
             output_file = download_dir / file_name
 
@@ -170,6 +170,6 @@ class MyrDownloader:
             if self.download_file(file_url, output_file):
                 self.report_stat("downloaded")
 
-            logger.info("Completed: %s of %s", n, len(filtered_files))
+            logger.info("Completed: %s of %s", n_files_processed, len(filtered_files))
 
         self._reset_skipped_streak()
