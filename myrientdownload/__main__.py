@@ -4,7 +4,7 @@ import argparse
 
 from .config import load_config
 from .logger import get_logger, setup_logger
-from .myr_download_mgmt import download_from_system_list
+from .myr_download import MyrDownloader
 
 setup_logger()
 logger = get_logger(__name__)
@@ -30,7 +30,9 @@ def main() -> None:
     args = parser.parse_args()
     setup_logger(args.log_level)
     config = load_config(args.config)
-    download_from_system_list(config)
+
+    mry_downloader = MyrDownloader(config)
+    mry_downloader.download_from_system_list()
 
 
 if __name__ == "__main__":
