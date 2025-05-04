@@ -59,6 +59,7 @@ class MyrDownloader:
     ) -> None:
         """Download files from the list of systems in the configuration."""
         for system in self.config.systems:
+            logger.info("")
             system_url = f"{self.config.myrinet_url}/{self.config.myrinet_path}/{system}/"
             files_list = get_files_list(system_url)
 
@@ -73,7 +74,7 @@ class MyrDownloader:
             ]
 
             if filtered_files:
-                msg = f"\nFound {len(filtered_files)} matching files for {system}"
+                msg = f"Found {len(filtered_files)} matching files for {system}"
                 logger.info(msg)
 
                 download_dir = self.config.download_dir
