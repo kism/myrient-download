@@ -28,11 +28,15 @@ class MyrDownloader:
             "failed": 0,
         }
 
+        self.skip_streak = 0
+
     def report_stat(self, stat: str) -> None:
         """Report the status of the download."""
         if stat in self.stats:
             self.stats[stat] += 1
             logger.debug("Status: %s", stat)
+            if stat == "skipped":
+                self.skip_streak += 1
         else:
             logger.warning("Unknown stat: %s", stat)
 
@@ -144,9 +148,13 @@ class MyrDownloader:
                     output_file.unlink()
 
             if skip_existing and output_file.exists():
-                logger.info("Skipping %s - already exists", file_name)
+                logger.debug("Skipping %s - already exists", file_name)
                 self.report_stat("skipped")
                 continue
+
+            if self.skip_streak > 0:
+                logger.info("Skipped %d existing files", self.skip_streak)
+                self.skip_streak = 0
 
             # Download the file
             file_url = f"{base_url}{file_name}"
