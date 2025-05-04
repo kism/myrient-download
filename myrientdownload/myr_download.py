@@ -91,11 +91,15 @@ class MyrDownloader:
             response.raise_for_status()
             total_size = int(response.headers.get("content-length", 0))
 
-            with destination.open("wb") as f, tqdm(total=total_size, unit="iB", unit_scale=True) as pbar:
+            destination_temp = destination.with_suffix(".part")
+
+            with destination_temp.open("wb") as f, tqdm(total=total_size, unit="iB", unit_scale=True) as pbar:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         size = f.write(chunk)
                         pbar.update(size)
+
+            destination_temp.rename(destination)
 
         except (
             requests.exceptions.ConnectTimeout,
@@ -119,6 +123,11 @@ class MyrDownloader:
         """Download files from Myrient based on the filtered list."""
         # Create system-specific directory
         download_dir.mkdir(parents=True, exist_ok=True)
+
+        # Remove any files that end with .part in the download directory
+        for part_file in download_dir.glob("*.part"):
+            logger.warning("Deleting incomplete file: %s", part_file)
+            part_file.unlink()
 
         for file_name in tqdm(filtered_files, desc="Processing files", unit="file"):
             # Put files in their system directory
