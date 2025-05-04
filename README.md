@@ -65,3 +65,4 @@ Share Path/
 - Backoff and retry
 - TOSEC and friends
 - Downloader as a class to track stats
+- use config object for download_files

@@ -76,6 +76,7 @@ class MyrDownloader:
                     system_url,
                     download_dir,
                     skip_existing=self.config.skip_existing,
+                    verify_zips=self.config.verify_zips,
                 )
             else:
                 logger.info("No matching files found for %s", system)
@@ -118,6 +119,7 @@ class MyrDownloader:
         download_dir: Path,
         *,
         skip_existing: bool = True,
+        verify_zips: bool = True,
     ) -> None:
         """Download files from Myrient based on the filtered list."""
         # Create system-specific directory
@@ -133,7 +135,7 @@ class MyrDownloader:
             output_file = download_dir / file_name
 
             # Check that zip file isn't completely cooked
-            if output_file.exists() and str(output_file).endswith(".zip"):
+            if verify_zips and output_file.exists() and str(output_file).endswith(".zip"):
                 try:
                     zipfile.ZipFile(output_file)
                 except zipfile.BadZipFile:
