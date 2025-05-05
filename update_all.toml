@@ -2,7 +2,6 @@
 myrinet_url = "https://myrient.erista.me/files"
 myrinet_path = "No-Intro"
 download_dir = "output"
-no_download_system_dir = false
 skip_existing = true
 systems = ["Nintendo - Nintendo Entertainment System (Headered)", "Nintendo - Super Nintendo Entertainment System"]
 system_allow_list = []

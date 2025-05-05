@@ -6,7 +6,7 @@ from typing import Any
 
 import tomlkit
 
-from . import PROGRAM_NAME, URL
+from . import PROGRAM_NAME, URL, __version__
 from .logger import get_logger
 
 logger = get_logger(__name__)
@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 class MyrDLConfig:
     """Configuration for the Myrient download script."""
 
-    def __init__(self, config_path: Path | None, download_directory_override: Path | None = None) -> None:
+    def __init__(self, config_path: Path | None = None, download_directory_override: Path | None = None) -> None:
         """Initialize the configuration with default values."""
         self.myrinet_url: str = "https://myrient.erista.me/files"
         self.myrinet_path: str = "No-Intro"
@@ -23,7 +23,7 @@ class MyrDLConfig:
         if download_directory_override:
             logger.info("Overriding download directory with '%s'", download_directory_override)
             self.download_dir = Path(download_directory_override).expanduser().resolve()
-        self.no_download_system_dir: bool = False
+        self.create_and_use_system_directories: bool = True
         self.skip_existing: bool = True
         self.verify_zips: bool = True  # Check existing zips are valid before skipping
         self.systems: list[str] = [
@@ -40,11 +40,36 @@ class MyrDLConfig:
 
         self.validate_config()
         self.write_to_file(config_path or Path("config.toml"))
+        self.print_config_overview()
+
+    def print_config_overview(self) -> None:
+        """Print the configuration overview."""
+
+        def will_will_not(*, condition: bool, thing: str) -> str:
+            if condition:
+                return f"\n  Will {thing}."
+            return f"\n  Will not {thing}."
+
+        msg = "\nConfiguration:"
+        msg += f"\n  Download Directory: {self.download_dir}"
+        msg += f"\n  Myrinet URL: {self.myrinet_url}"
+        msg += f"\n  Myrinet Path: {self.myrinet_path}"
+        msg += will_will_not(condition=self.create_and_use_system_directories, thing="create system directories")
+        msg += will_will_not(condition=self.skip_existing, thing="force override existing files")
+        msg += will_will_not(condition=self.verify_zips, thing="verify existing zips")
+        msg += f"\n  Systems: {'\n    '.join(self.systems)}"
+        msg += f"\n  System Allow List: {', '.join(self.system_allow_list) if self.system_allow_list else '<All>.'}"
+        msg += f"\n  System Disallow List: {', '.join(self.system_disallow_list) if self.system_disallow_list else '<None>'}"  # noqa: E501 # Eh
+        msg += f"\n  Game Allow List: {', '.join(self.game_allow_list) if self.game_allow_list else '<All>'}"
+        msg += f"\n  Game Disallow List: {', '.join(self.game_disallow_list) if self.game_disallow_list else '<None>'}"
+
+        logger.info(msg)
+        time.sleep(3)  # Pause to allow the user to read the config overview
 
     def validate_config(self) -> None:
         """Validate the configuration values."""
-        if self.no_download_system_dir and len(self.systems) > 1:
-            msg = "Cannot set 'no_system_dir' to True when multiple systems are specified."
+        if not self.create_and_use_system_directories and len(self.systems) > 1:
+            msg = "Cannot set 'create_and_use_system_directories' to True when multiple systems are specified."
             raise ValueError(msg)
 
         if not self.download_dir.exists():
@@ -82,6 +107,6 @@ class MyrDLConfig:
         temp_dict["download_dir"] = str(self.download_dir)
 
         with config_path.open("w") as f:
-            f.write(f"# Configuration file for {PROGRAM_NAME} script {URL}\n")
+            f.write(f"# Configuration file for {PROGRAM_NAME} v{__version__} {URL}\n")
             tomlkit.dump(temp_dict, f)
         logger.info("Configuration written to '%s'", config_path)

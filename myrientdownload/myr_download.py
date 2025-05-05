@@ -48,18 +48,22 @@ class MyrDownloader:
 
     def print_stats(self) -> None:
         """Print the download statistics."""
-        logger.info("Download statistics:")
+        msg = "\nDownload statistics:"
         for stat, count in self.stats.items():
-            msg = f"{stat.capitalize()}: {count}"
-            logger.info(msg)
-        logger.info("Download completed.")
+            msg += f"{stat.capitalize()}: {count}"
+
+        msg += "Download Complete!"
+        logger.info(msg)
 
     def download_from_system_list(
         self,
     ) -> None:
         """Download files from the list of systems in the configuration."""
+        print()  # noqa: T201 # Add a newline for better readability
+        logger.info("Starting download from Myrinet...")
+
         for system in self.config.systems:
-            logger.info("")
+            print()  # noqa: T201 # Add a newline for better readability
             system_url = f"{self.config.myrinet_url}/{self.config.myrinet_path}/{system}/"
             files_list = get_files_list(system_url)
 
@@ -78,9 +82,7 @@ class MyrDownloader:
                 logger.info(msg)
 
                 download_dir = self.config.download_dir
-                if (
-                    not self.config.no_download_system_dir
-                ):  # Silly double negative since it's what I want the key to be named
+                if self.config.create_and_use_system_directories:
                     download_dir = self.config.download_dir / system
 
                 self.download_files(
