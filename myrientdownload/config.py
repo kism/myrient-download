@@ -15,11 +15,14 @@ logger = get_logger(__name__)
 class MyrDLConfig:
     """Configuration for the Myrient download script."""
 
-    def __init__(self, config_path: Path | None) -> None:
+    def __init__(self, config_path: Path | None, download_directory_override: Path | None = None) -> None:
         """Initialize the configuration with default values."""
         self.myrinet_url: str = "https://myrient.erista.me/files"
         self.myrinet_path: str = "No-Intro"
-        self.download_dir: Path = Path("output")
+        self.download_dir: Path = Path.cwd()
+        if download_directory_override:
+            logger.info("Overriding download directory with '%s'", download_directory_override)
+            self.download_dir = Path(download_directory_override).expanduser().resolve()
         self.no_download_system_dir: bool = False
         self.skip_existing: bool = True
         self.verify_zips: bool = True  # Check existing zips are valid before skipping
@@ -36,6 +39,7 @@ class MyrDLConfig:
             self.load_from_file(config_path)
 
         self.validate_config()
+        self.write_to_file(config_path or Path("config.toml"))
 
     def validate_config(self) -> None:
         """Validate the configuration values."""
@@ -52,6 +56,7 @@ class MyrDLConfig:
 
     def load_from_file(self, config_path: Path) -> None:
         """Load configuration from a file."""
+        logger.info("Loading configuration from '%s'", config_path)
         with config_path.open() as f:
             config_dict_toml = tomlkit.load(f)
 
@@ -70,7 +75,7 @@ class MyrDLConfig:
 
     def write_to_file(self, config_path: Path) -> None:
         """Write configuration to a file."""
-        logger.info("Writing configuration to '%s'", config_path)
+        logger.debug("Writing configuration to '%s'", config_path)
         temp_dict = self.__dict__.copy()
 
         # Convert Path object to string for TOML serialization
@@ -80,18 +85,3 @@ class MyrDLConfig:
             f.write(f"# Configuration file for {PROGRAM_NAME} script {URL}\n")
             tomlkit.dump(temp_dict, f)
         logger.info("Configuration written to '%s'", config_path)
-
-
-def load_config(config_path_str: str) -> MyrDLConfig:
-    """Load configuration from a JSON file."""
-    config_path = Path(config_path_str).expanduser().resolve()
-
-    if config_path.exists():
-        config = MyrDLConfig(config_path)
-    else:
-        logger.warning("Configuration file '%s' not found. Using default values.", config_path)
-        config = MyrDLConfig(None)
-
-    config.write_to_file(config_path)
-
-    return config

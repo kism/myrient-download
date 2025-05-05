@@ -1,9 +1,10 @@
 """Main entry point for CLI."""
 
 import argparse
+from pathlib import Path
 
 from . import DESCRIPTION, PROGRAM_NAME, __version__
-from .config import load_config
+from .config import MyrDLConfig
 from .logger import get_logger, setup_logger
 from .myr_download import MyrDownloader
 
@@ -27,13 +28,22 @@ def main() -> None:
         default="INFO",
         help="Set the logging level (default: INFO)",
     )
+    parser.add_argument(
+        "--directory",
+        type=str,
+        default="",
+        help="Specify the directory to save downloaded files, will override and save to the config file",
+    )
 
     args = parser.parse_args()
 
     print_program_info()
 
     setup_logger(args.log_level)
-    config = load_config(args.config)
+
+    config_path = Path(args.config).expanduser().resolve()
+    download_directory = Path(args.directory).expanduser().resolve() if args.directory else None
+    config = MyrDLConfig(config_path, download_directory)
 
     mry_downloader = MyrDownloader(config)
     mry_downloader.download_from_system_list()
