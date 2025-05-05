@@ -48,29 +48,31 @@ class MyrDLConfig:
     def print_config_overview(self) -> None:
         """Print the configuration overview."""
 
-        print_magenta = Fore.MAGENTA + Back.BLACK
         print_green = Fore.GREEN + Back.BLACK
         print_red = Fore.RED + Back.BLACK
 
+        def str_magenta(text: Path | str | list[str]) -> str:
+            return f"{Fore.MAGENTA}{Back.BLACK}{text}{Style.RESET_ALL}"
+
         def will_will_not(*, condition: bool, thing: str) -> str:
             if condition:
-                return f"\n  {print_green}Will {thing}{Style.RESET_ALL}"
-            return f"\n  {print_red}Will NOT {thing}{Style.RESET_ALL}"
+                return f"{print_green}Will {thing}{Style.RESET_ALL}"
+            return f"{print_red}Will NOT {thing}{Style.RESET_ALL}"
 
-        msg = "\nConfiguration:"
-        msg += f"\n  Download Directory: {print_magenta}{self.download_dir}{Style.RESET_ALL}"
-        msg += f"\n  Myrinet URL: {print_magenta}{self.myrinet_url}{Style.RESET_ALL}"
-        msg += f"\n  Myrinet Path: {print_magenta}{self.myrinet_path}{Style.RESET_ALL}"
-        msg += will_will_not(condition=self.create_and_use_system_directories, thing="create system directories")
-        msg += will_will_not(condition=self.skip_existing, thing="skip existing files")
-        msg += will_will_not(condition=self.verify_zips, thing="verify existing zips")
-        msg += "\n  Systems:\n    "
-        msg += "\n    ".join(self.systems)
-        msg += f"\n  System Allow List: {print_magenta}{', '.join(self.system_allow_list) if self.system_allow_list else '<All>'}{Style.RESET_ALL}"
-        msg += f"\n  System Disallow List: {print_magenta}{', '.join(self.system_disallow_list) if self.system_disallow_list else '<None>'}{Style.RESET_ALL}"  # noqa: E501 # Eh
-        msg += f"\n  Game Allow List: {print_magenta}{', '.join(self.game_allow_list) if self.game_allow_list else '<All>'}{Style.RESET_ALL}"
-        msg += f"\n  Game Disallow List: {print_magenta}{', '.join(self.game_disallow_list) if self.game_disallow_list else '<None>'}{Style.RESET_ALL}"
-
+        msg = f"""
+Configuration:
+  Download Directory: {str_magenta(self.download_dir)}
+  Resolved Myrinet URL: {str_magenta(f"{self.myrinet_url}/{str_magenta(self.myrinet_path)}")}
+  {will_will_not(condition=self.create_and_use_system_directories, thing="create system directories")}
+  {will_will_not(condition=self.skip_existing, thing="skip existing files")}
+  {will_will_not(condition=self.verify_zips, thing="verify existing zips")}
+  Systems:
+    {"\n    ".join(self.systems)}
+  System Allow List: {str_magenta(", ".join(self.system_allow_list) if self.system_allow_list else "<All>")}
+  System Disallow List: {str_magenta(", ".join(self.system_disallow_list) if self.system_disallow_list else "<None>")}
+  Game Allow List: {str_magenta(", ".join(self.game_allow_list) if self.game_allow_list else "<All>")}
+  Game Disallow List: {str_magenta(", ".join(self.game_disallow_list) if self.game_disallow_list else "<None>")}
+"""
         logger.info(msg)
         time.sleep(3)  # Pause to allow the user to read the config overview
 
