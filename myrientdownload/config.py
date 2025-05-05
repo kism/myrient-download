@@ -24,8 +24,7 @@ class MyrDLConfig:
         self.myrinet_path: str = "No-Intro"
         self.download_dir: Path = Path.cwd()
         if download_directory_override:
-            logger.info("Overriding download directory with '%s'", download_directory_override)
-            self.download_dir = Path(download_directory_override).expanduser().resolve()
+            self.download_dir = download_directory_override.expanduser().resolve()
         self.create_and_use_system_directories: bool = True
         self.skip_existing: bool = True
         self.verify_zips: bool = True  # Check existing zips are valid before skipping
@@ -38,11 +37,11 @@ class MyrDLConfig:
         self.game_allow_list: list[str] = ["(USA)"]
         self.game_disallow_list: list[str] = ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"]
 
-        if config_path:
-            self.load_from_file(config_path)
+        if config_path and config_path.exists():
+            self.load_from_file(config_path, download_directory_override)
 
         self.validate_config()
-        self.write_to_file(config_path or Path("config.toml"))
+        self.write_to_file(config_path)
         self.print_config_overview()
 
     def print_config_overview(self) -> None:
@@ -83,12 +82,12 @@ Configuration:
 
         if not self.download_dir.exists():
             logger.warning(
-                "Download directory '%s' does not exist. \nCreating it in 10 seconds.", self.download_dir.resolve()
+                "Download directory '%s' does not exist. Creating it in 10 seconds.", self.download_dir.resolve()
             )
             time.sleep(10)
             self.download_dir.mkdir(parents=True, exist_ok=True)
 
-    def load_from_file(self, config_path: Path) -> None:
+    def load_from_file(self, config_path: Path, download_directory_override: Path | None = None) -> None:
         """Load configuration from a file."""
         logger.info("Loading configuration from '%s'", config_path)
         with config_path.open() as f:
@@ -105,10 +104,21 @@ Configuration:
                 config_dict[key] = getattr(self, key)
 
         self.__dict__.update(config_dict)
-        self.download_dir = Path(self.download_dir).expanduser().resolve()
 
-    def write_to_file(self, config_path: Path) -> None:
+        if download_directory_override:
+            logger.info("Overriding download directory with '%s'", download_directory_override)
+            self.download_dir = download_directory_override.expanduser().resolve()
+        else:
+            self.download_dir = Path(self.download_dir).expanduser().resolve()
+
+    def write_to_file(self, config_path: Path | None) -> None:
         """Write configuration to a file."""
+        if not config_path:
+            config_path = Path("config.toml").expanduser().resolve()
+
+        if not config_path.exists():
+            config_path.touch()
+
         logger.debug("Writing configuration to '%s'", config_path)
         temp_dict = self.__dict__.copy()
 
