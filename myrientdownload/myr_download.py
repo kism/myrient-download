@@ -133,7 +133,6 @@ class MyrDownloader:
     ) -> None:
         """Download files from Myrient based on the filtered list."""
         # Create system-specific directory
-
         download_dir = self.config.download_dir
         if self.config.create_and_use_system_directories:
             download_dir = self.config.download_dir / system
@@ -146,6 +145,7 @@ class MyrDownloader:
             part_file.unlink()
 
         for n_files_processed, file_name in enumerate(filtered_files):
+            logger.info("%s: %s/%s", system, n_files_processed, len(filtered_files))
             # Put files in their system directory
             output_file = download_dir / file_name
 
@@ -169,7 +169,5 @@ class MyrDownloader:
             logger.info("Downloading: %s", file_name)
             if self.download_file(file_url, output_file):
                 self.report_stat("downloaded")
-
-            logger.info("%s: %s/%s", system, n_files_processed, len(filtered_files))
 
         self._reset_skipped_streak()
