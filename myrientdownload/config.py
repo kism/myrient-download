@@ -47,7 +47,6 @@ class MyrDLConfig:
 
     def print_config_overview(self) -> None:
         """Print the configuration overview."""
-
         print_green = Fore.GREEN + Back.BLACK
         print_red = Fore.RED + Back.BLACK
 
