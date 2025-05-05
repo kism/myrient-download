@@ -5,11 +5,14 @@ from pathlib import Path
 from typing import Any
 
 import tomlkit
+from colorama import Back, Fore, Style, init
 
 from . import PROGRAM_NAME, URL, __version__
 from .logger import get_logger
 
 logger = get_logger(__name__)
+
+init(autoreset=True)
 
 
 class MyrDLConfig:
@@ -45,23 +48,28 @@ class MyrDLConfig:
     def print_config_overview(self) -> None:
         """Print the configuration overview."""
 
+        print_magenta = Fore.MAGENTA + Back.BLACK
+        print_green = Fore.GREEN + Back.BLACK
+        print_red = Fore.RED + Back.BLACK
+
         def will_will_not(*, condition: bool, thing: str) -> str:
             if condition:
-                return f"\n  Will {thing}."
-            return f"\n  Will not {thing}."
+                return f"\n  {print_green}Will {thing}{Style.RESET_ALL}"
+            return f"\n  {print_red}Will NOT {thing}{Style.RESET_ALL}"
 
         msg = "\nConfiguration:"
-        msg += f"\n  Download Directory: {self.download_dir}"
-        msg += f"\n  Myrinet URL: {self.myrinet_url}"
-        msg += f"\n  Myrinet Path: {self.myrinet_path}"
+        msg += f"\n  Download Directory: {print_magenta}{self.download_dir}{Style.RESET_ALL}"
+        msg += f"\n  Myrinet URL: {print_magenta}{self.myrinet_url}{Style.RESET_ALL}"
+        msg += f"\n  Myrinet Path: {print_magenta}{self.myrinet_path}{Style.RESET_ALL}"
         msg += will_will_not(condition=self.create_and_use_system_directories, thing="create system directories")
-        msg += will_will_not(condition=self.skip_existing, thing="force override existing files")
+        msg += will_will_not(condition=self.skip_existing, thing="skip existing files")
         msg += will_will_not(condition=self.verify_zips, thing="verify existing zips")
-        msg += f"\n  Systems: {'\n    '.join(self.systems)}"
-        msg += f"\n  System Allow List: {', '.join(self.system_allow_list) if self.system_allow_list else '<All>.'}"
-        msg += f"\n  System Disallow List: {', '.join(self.system_disallow_list) if self.system_disallow_list else '<None>'}"  # noqa: E501 # Eh
-        msg += f"\n  Game Allow List: {', '.join(self.game_allow_list) if self.game_allow_list else '<All>'}"
-        msg += f"\n  Game Disallow List: {', '.join(self.game_disallow_list) if self.game_disallow_list else '<None>'}"
+        msg += "\n  Systems:\n    "
+        msg += "\n    ".join(self.systems)
+        msg += f"\n  System Allow List: {print_magenta}{', '.join(self.system_allow_list) if self.system_allow_list else '<All>'}{Style.RESET_ALL}"
+        msg += f"\n  System Disallow List: {print_magenta}{', '.join(self.system_disallow_list) if self.system_disallow_list else '<None>'}{Style.RESET_ALL}"  # noqa: E501 # Eh
+        msg += f"\n  Game Allow List: {print_magenta}{', '.join(self.game_allow_list) if self.game_allow_list else '<All>'}{Style.RESET_ALL}"
+        msg += f"\n  Game Disallow List: {print_magenta}{', '.join(self.game_disallow_list) if self.game_disallow_list else '<None>'}{Style.RESET_ALL}"
 
         logger.info(msg)
         time.sleep(3)  # Pause to allow the user to read the config overview

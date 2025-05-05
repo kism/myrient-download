@@ -14,6 +14,8 @@ Run
 
 `myrient-download --config config.toml`
 
+`myrient-download --help`
+
 ## Run (Developers)
 
 Setup
@@ -26,9 +28,7 @@ uv sync
 
 Run
 
-```bash
-python -m myrientdownload --config config.json
-```
+`python -m myrientdownload --config config.toml`
 
 ## Example Directory Structure
 
@@ -64,7 +64,5 @@ Share Path/
 
 ## Todo
 
-- Backoff and retry
 - TOSEC and friends
-- Downloader as a class to track stats
 - use config object for download_files

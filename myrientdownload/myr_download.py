@@ -50,9 +50,8 @@ class MyrDownloader:
         """Print the download statistics."""
         msg = "\nDownload statistics:"
         for stat, count in self.stats.items():
-            msg += f"{stat.capitalize()}: {count}"
+            msg += f"\n  {stat.capitalize()}: {count}"
 
-        msg += "Download Complete!"
         logger.info(msg)
 
     def download_from_system_list(
@@ -81,21 +80,17 @@ class MyrDownloader:
                 msg = f"Found {len(filtered_files)} matching files for {system}"
                 logger.info(msg)
 
-                download_dir = self.config.download_dir
-                if self.config.create_and_use_system_directories:
-                    download_dir = self.config.download_dir / system
-
                 self.download_files(
                     filtered_files,
                     system_url,
-                    download_dir,
-                    skip_existing=self.config.skip_existing,
-                    verify_zips=self.config.verify_zips,
+                    system=system,
                 )
             else:
                 logger.info("No matching files found for %s", system)
 
         self.print_stats()
+        print()  # noqa: T201 # Add a newline for better readability
+        logger.info("Download complete!")
 
     def download_file(self, url: str, destination: Path) -> bool:
         """Download an individual file."""
@@ -133,13 +128,16 @@ class MyrDownloader:
         self,
         filtered_files: list[str],
         base_url: str,
-        download_dir: Path,
         *,
-        skip_existing: bool = True,
-        verify_zips: bool = True,
+        system: str = "",
     ) -> None:
         """Download files from Myrient based on the filtered list."""
         # Create system-specific directory
+
+        download_dir = self.config.download_dir
+        if self.config.create_and_use_system_directories:
+            download_dir = self.config.download_dir / system
+
         download_dir.mkdir(parents=True, exist_ok=True)
 
         # Remove any files that end with .part in the download directory
@@ -152,14 +150,14 @@ class MyrDownloader:
             output_file = download_dir / file_name
 
             # Check that zip file isn't completely cooked
-            if verify_zips and output_file.exists() and str(output_file).endswith(".zip"):
+            if self.config.verify_zips and output_file.exists() and str(output_file).endswith(".zip"):
                 try:
                     zipfile.ZipFile(output_file)
                 except zipfile.BadZipFile:
                     logger.warning("Deleting broken zip file: %s", output_file)
                     output_file.unlink()
 
-            if skip_existing and output_file.exists():
+            if self.config.skip_existing and output_file.exists():
                 logger.debug("Skipping %s - already exists", file_name)
                 self.report_stat("skipped")
                 continue
@@ -172,6 +170,6 @@ class MyrDownloader:
             if self.download_file(file_url, output_file):
                 self.report_stat("downloaded")
 
-            logger.info("Completed: %s of %s", n_files_processed, len(filtered_files))
+            logger.info("%s: %s/%s", system, n_files_processed, len(filtered_files))
 
         self._reset_skipped_streak()

@@ -29,3 +29,18 @@ def test_version_lock():
             break
 
     assert found_version, "myrientdownload not found in uv.lock"
+
+
+def test_init_pyproject_fields():
+    """Verify required fields in pyproject.toml."""
+    pyproject_path = Path("pyproject.toml")
+    with pyproject_path.open("rb") as f:
+        pyproject_toml = tomlkit.load(f)
+
+    from myrientdownload import DESCRIPTION, PROGRAM_NAME, URL
+
+    assert pyproject_toml["project"]["description"] == DESCRIPTION
+
+    assert PROGRAM_NAME in pyproject_toml["project"]["scripts"]
+
+    assert pyproject_toml["project"]["urls"]["Homepage"] == URL

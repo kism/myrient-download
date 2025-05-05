@@ -1,6 +1,6 @@
 [project]
 name = "myrientdownload"
-version = "0.5.1"
+version = "0.5.2"
 description = "A program to download files Myrient"
 authors = [
     { name = "Kieran Gee", email = "kieran.lost.the.game@gmail.com" },
@@ -49,6 +49,8 @@ packages = ["myrientdownload"]
 [project.scripts]
 myrient-download = "myrientdownload:__main__.main"
 
+[project.urls]
+"Homepage" = "https://github.com/kism/myrient-download"
 
 [tool.ruff]
 cache-dir = "~/.cache/ruff"
