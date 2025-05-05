@@ -34,15 +34,19 @@ def main() -> None:
         default="",
         help="Specify the directory to save downloaded files, will override and save to the config file",
     )
-
     args = parser.parse_args()
 
     print_program_info()
-
     setup_logger(args.log_level)
 
-    config_path = Path(args.config).expanduser().resolve()
-    download_directory = Path(args.directory).expanduser().resolve() if args.directory else None
+    config_path: Path | None = None
+    if args.config != "":
+        config_path = Path(args.config).expanduser().resolve()
+
+    download_directory: Path | None = None
+    if args.directory != "":
+        download_directory = Path(args.directory)
+
     config = MyrDLConfig(config_path, download_directory)
 
     mry_downloader = MyrDownloader(config)

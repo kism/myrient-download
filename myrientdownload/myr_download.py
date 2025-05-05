@@ -178,6 +178,8 @@ class MyrDownloader:
 
             # Download the file
             file_url = f"{base_url}{file_name}"
+            logger.info("Downloading: %s", file_name)
+            logger.debug("Downloading %s to: %s", file_url, output_file)
             if self.download_file(file_url, output_file):
                 self.report_stat("downloaded")
 
