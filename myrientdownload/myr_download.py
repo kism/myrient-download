@@ -1,5 +1,6 @@
 """Download management for Myrinet files."""
 
+import logging
 import zipfile
 from pathlib import Path
 from urllib.parse import quote  # Add this for URL encoding
@@ -117,8 +118,11 @@ class MyrDownloader:
             requests.exceptions.ConnectTimeout,
             requests.exceptions.ReadTimeout,
             requests.exceptions.ConnectionError,
-        ):
-            logger.exception("Error downloading %s", url)
+        ) as e:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception("Connection error: %s", url)
+            else:
+                logger.error("%s: %s", e, url)  # noqa: TRY400 # logger.exception is too verbose, we don't need the stack trace for these exceptions
             self.report_stat("failed")
             return False
 
