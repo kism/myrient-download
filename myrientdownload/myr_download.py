@@ -9,7 +9,7 @@ import requests
 from tqdm import tqdm
 
 from .config import MyrDLConfig
-from .constants import HTTP_HEADERS, REQUESTS_TIMEOUT
+from .constants import FUN_TQDM_LOADING_BAR, HTTP_HEADERS, REQUESTS_TIMEOUT
 from .logger import get_logger
 from .myr_files import get_files_list
 
@@ -105,7 +105,7 @@ class MyrDownloader:
 
             with (
                 destination_temp.open("wb") as f,
-                tqdm(total=total_size, unit="iB", unit_scale=True, ascii=" ▖▘▝▗▚▞█", leave=False) as pbar,
+                tqdm(total=total_size, unit="iB", unit_scale=True, ascii=FUN_TQDM_LOADING_BAR, leave=False) as pbar,
             ):
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
