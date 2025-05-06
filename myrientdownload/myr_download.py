@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import quote  # Add this for URL encoding
 
 import requests
+from colorama import Fore, Style, init
 from tqdm import tqdm
 
 from .config import MyrDLConfig
@@ -14,6 +15,8 @@ from .logger import get_logger
 from .myr_files import get_files_list
 
 logger = get_logger(__name__)
+
+init()
 
 
 class MyrDownloader:
@@ -166,7 +169,11 @@ class MyrDownloader:
                 continue
 
             self._reset_skipped_streak()
-            msg = f"🕹️  {system} #️⃣  {n_files_processed}/{len(filtered_files)} 💾  {file_name} "
+
+            def magenta_str(s: str) -> str:
+                return f"{Fore.MAGENTA}{s}{Style.RESET_ALL}"
+
+            msg = f"{system} {magenta_str('@')}{n_files_processed}/{len(filtered_files)} {magenta_str('»')} {file_name} "
 
             logger.info(msg)
 
