@@ -1,0 +1,12 @@
+# Configuration file for myrient-download v0.5.3 https://github.com/kism/myrient-download
+myrinet_url = "https://myrient.erista.me/files"
+myrinet_path = "No-Intro"
+download_dir = "."
+create_and_use_system_directories = true
+skip_existing = true
+verify_zips = true
+systems = []
+system_allow_list = []
+system_disallow_list = []
+game_allow_list = []
+game_disallow_list = []

@@ -1,18 +1,22 @@
 """Download management for Myrinet files."""
 
+import logging
 import zipfile
 from pathlib import Path
 from urllib.parse import quote  # Add this for URL encoding
 
 import requests
+from colorama import Fore, Style, init
 from tqdm import tqdm
 
 from .config import MyrDLConfig
-from .constants import HTTP_HEADERS, REQUESTS_TIMEOUT
+from .constants import FUN_TQDM_LOADING_BAR, HTTP_HEADERS, REQUESTS_TIMEOUT
 from .logger import get_logger
 from .myr_files import get_files_list
 
 logger = get_logger(__name__)
+
+init()
 
 
 class MyrDownloader:
@@ -104,7 +108,7 @@ class MyrDownloader:
 
             with (
                 destination_temp.open("wb") as f,
-                tqdm(total=total_size, unit="iB", unit_scale=True, ascii=" ▖▘▝▗▚▞█", leave=False) as pbar,
+                tqdm(total=total_size, unit="iB", unit_scale=True, ascii=FUN_TQDM_LOADING_BAR, leave=False) as pbar,
             ):
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
@@ -117,8 +121,11 @@ class MyrDownloader:
             requests.exceptions.ConnectTimeout,
             requests.exceptions.ReadTimeout,
             requests.exceptions.ConnectionError,
-        ):
-            logger.exception("Error downloading %s", url)
+        ) as e:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception("Connection error: %s", url)
+            else:
+                logger.error("%s: %s", e, url)  # noqa: TRY400 # logger.exception is too verbose, we don't need the stack trace for these exceptions
             self.report_stat("failed")
             return False
 
@@ -133,7 +140,6 @@ class MyrDownloader:
     ) -> None:
         """Download files from Myrient based on the filtered list."""
         # Create system-specific directory
-
         download_dir = self.config.download_dir
         if self.config.create_and_use_system_directories:
             download_dir = self.config.download_dir / system
@@ -164,13 +170,16 @@ class MyrDownloader:
 
             self._reset_skipped_streak()
 
+            def magenta_str(s: str) -> str:
+                return f"{Fore.MAGENTA}{s}{Style.RESET_ALL}"
+
+            msg = f"{system} {magenta_str('@')}{n_files_processed}/{len(filtered_files)} {magenta_str('»')} {file_name}"
+            logger.info(msg)
+
             # Download the file
             file_url = f"{base_url}{file_name}"
-            logger.info("Downloading: %s", file_name)
             logger.debug("Downloading %s to: %s", file_url, output_file)
             if self.download_file(file_url, output_file):
                 self.report_stat("downloaded")
-
-            logger.info("%s: %s/%s", system, n_files_processed, len(filtered_files))
 
         self._reset_skipped_streak()
