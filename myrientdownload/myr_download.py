@@ -149,7 +149,6 @@ class MyrDownloader:
             part_file.unlink()
 
         for n_files_processed, file_name in enumerate(filtered_files):
-            logger.info("%s: %s/%s", system, n_files_processed, len(filtered_files))
             # Put files in their system directory
             output_file = download_dir / file_name
 
@@ -167,6 +166,7 @@ class MyrDownloader:
                 continue
 
             self._reset_skipped_streak()
+            logger.info("%s: %s/%s", system, n_files_processed, len(filtered_files))
 
             # Download the file
             file_url = f"{base_url}{file_name}"
