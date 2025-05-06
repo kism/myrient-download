@@ -166,11 +166,12 @@ class MyrDownloader:
                 continue
 
             self._reset_skipped_streak()
-            logger.info("%s: %s/%s", system, n_files_processed, len(filtered_files))
+            msg = f"🕹️  {system} #️⃣  {n_files_processed}/{len(filtered_files)} 💾  {file_name} "
+
+            logger.info(msg)
 
             # Download the file
             file_url = f"{base_url}{file_name}"
-            logger.info("Downloading: %s", file_name)
             if self.download_file(file_url, output_file):
                 self.report_stat("downloaded")
 
