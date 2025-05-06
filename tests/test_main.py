@@ -1,5 +1,3 @@
-import argparse
-
 from myrientdownload.__main__ import print_program_info
 
 

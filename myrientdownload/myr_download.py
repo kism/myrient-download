@@ -173,8 +173,7 @@ class MyrDownloader:
             def magenta_str(s: str) -> str:
                 return f"{Fore.MAGENTA}{s}{Style.RESET_ALL}"
 
-            msg = f"{system} {magenta_str('@')}{n_files_processed}/{len(filtered_files)} {magenta_str('»')} {file_name} "
-
+            msg = f"{system} {magenta_str('@')}{n_files_processed}/{len(filtered_files)} {magenta_str('»')} {file_name}"
             logger.info(msg)
 
             # Download the file
