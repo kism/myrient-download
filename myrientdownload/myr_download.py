@@ -34,7 +34,9 @@ class MyrDownloader:
 
         self.skip_streak = 0
 
-    def report_stat(self, stat: str) -> None:
+    # region: Stats
+
+    def _report_stat(self, stat: str) -> None:
         """Report the status of the download."""
         if stat in self.stats:
             self.stats[stat] += 1
@@ -57,6 +59,10 @@ class MyrDownloader:
             msg += f"\n  {stat.capitalize()}: {count}"
 
         logger.info(msg)
+
+    # endregion
+
+    # region: Public download methods
 
     def download_from_system_list(
         self,
@@ -84,7 +90,7 @@ class MyrDownloader:
                 msg = f"Found {len(filtered_files)} matching files for {system}"
                 logger.info(msg)
 
-                self.download_files(
+                self._download_files(
                     filtered_files,
                     system_url,
                     system=system,
@@ -96,7 +102,11 @@ class MyrDownloader:
         print()  # noqa: T201 # Add a newline for better readability
         logger.info("Download complete!")
 
-    def download_file(self, url: str, destination: Path) -> bool:
+    # endregion
+
+    # region: Private download methods
+
+    def _download_file(self, url: str, destination: Path) -> bool:
         """Download an individual file."""
         try:
             encoded_url = quote(url, safe=":/")
@@ -126,12 +136,28 @@ class MyrDownloader:
                 logger.exception("Connection error: %s", url)
             else:
                 logger.error("%s: %s", e, url)  # noqa: TRY400 # logger.exception is too verbose, we don't need the stack trace for these exceptions
-            self.report_stat("failed")
+            self._report_stat("failed")
             return False
 
         return True
 
-    def download_files(
+    def _get_download_dir(self, system: str) -> Path:
+        """Get the download directory based on the configuration and system."""
+        download_dir = self.config.download_dir
+        if self.config.create_and_use_system_directories:
+            if self.config.create_and_use_database_directories:
+                download_dir = self.config.download_dir / self.config.myrinet_path / system
+            else:
+                download_dir = self.config.download_dir / system
+        if self.config.create_and_use_database_directories and not self.config.create_and_use_system_directories:
+            msg = "Cannot create database directories without system directories"
+            msg += "\nPlease set create_and_use_system_directories to True"
+            raise ValueError(msg)
+
+        download_dir.mkdir(parents=True, exist_ok=True)
+        return download_dir
+
+    def _download_files(
         self,
         filtered_files: list[str],
         base_url: str,
@@ -140,11 +166,7 @@ class MyrDownloader:
     ) -> None:
         """Download files from Myrient based on the filtered list."""
         # Create system-specific directory
-        download_dir = self.config.download_dir
-        if self.config.create_and_use_system_directories:
-            download_dir = self.config.download_dir / system
-
-        download_dir.mkdir(parents=True, exist_ok=True)
+        download_dir = self._get_download_dir(system=system)
 
         # Remove any files that end with .part in the download directory
         for part_file in download_dir.glob("*.part"):
@@ -165,7 +187,7 @@ class MyrDownloader:
 
             if self.config.skip_existing and output_file.exists():
                 logger.debug("Skipping %s - already exists", file_name)
-                self.report_stat("skipped")
+                self._report_stat("skipped")
                 continue
 
             self._reset_skipped_streak()
@@ -179,7 +201,9 @@ class MyrDownloader:
             # Download the file
             file_url = f"{base_url}{file_name}"
             logger.debug("Downloading %s to: %s", file_url, output_file)
-            if self.download_file(file_url, output_file):
-                self.report_stat("downloaded")
+            if self._download_file(file_url, output_file):
+                self._report_stat("downloaded")
 
         self._reset_skipped_streak()
+
+    # endregion

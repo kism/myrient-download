@@ -21,11 +21,12 @@ class MyrDLConfig:
     def __init__(self, config_path: Path | None = None, download_directory_override: Path | None = None) -> None:
         """Initialize the configuration with default values."""
         self.myrinet_url: str = "https://myrient.erista.me/files"
-        self.myrinet_path: str = "No-Intro"
+        self.myrinet_path: str = "No-Intro" # Database name, see the website
         self.download_dir: Path = Path.cwd()
         if download_directory_override:
             self.download_dir = download_directory_override.expanduser().resolve()
-        self.create_and_use_system_directories: bool = True
+        self.create_and_use_system_directories: bool = True # System name, per the list
+        self.create_and_use_database_directories: bool = False # No-Intro, Redump, etc.
         self.skip_existing: bool = True
         self.verify_zips: bool = True  # Check existing zips are valid before skipping
         self.systems: list[str] = [
