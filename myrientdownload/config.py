@@ -81,7 +81,7 @@ class MyrDLConfigHandler(BaseSettings):
     # Default values for our settings
     myrient: MyrDLConfig = MyrDLConfig()
 
-    config_path: Path = Path()
+    config_path: Path = Path() / "config.toml"  # Default config path
 
     # Configure settings class
     model_config = SettingsConfigDict(
@@ -115,6 +115,10 @@ class MyrDLConfigHandler(BaseSettings):
 
     def _load_from_toml(self) -> None:
         """Load settings from the TOML file specified in config_path."""
+        if self.config_path.is_dir():
+            msg = f"Config path '{self.config_path}' is a directory, not a file."
+            raise ValueError(msg)
+
         if self.config_path.is_file():
             with self.config_path.open("r") as f:
                 config_data = tomlkit.load(f)
