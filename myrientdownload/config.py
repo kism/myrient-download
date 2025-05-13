@@ -11,6 +11,7 @@ from pydantic import BaseModel, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from . import PROGRAM_NAME, URL, __version__
+from .helpers import wait_with_dots
 from .logger import get_logger
 
 logger = get_logger(__name__)
@@ -72,7 +73,7 @@ Configuration:
   Game Disallow List: {str_magenta(", ".join(self.game_disallow_list) if self.game_disallow_list else "<None>")}"""
 
         logger.info(msg)
-        time.sleep(3)  # Pause to allow the user to read the config overview
+        wait_with_dots(5)  # Pause to allow the user to read the config overview
 
 
 class MyrDLConfigHandler(BaseSettings):
@@ -109,7 +110,7 @@ class MyrDLConfigHandler(BaseSettings):
                 "Download directory '%s' does not exist. Creating it in 10 seconds.",
                 self.myrient.download_dir.resolve(),
             )
-            time.sleep(10)
+            wait_with_dots(10)  # Wait for 10 seconds to give the user a chance to cancel
             self.myrient.download_dir.mkdir(parents=True, exist_ok=True)
         return self
 
