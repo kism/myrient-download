@@ -28,8 +28,9 @@ def main() -> None:
         help="Specify the directory to save downloaded files, will override and save to the config file",
     )
     parser.add_argument(
-        "config",
+        "--config",
         type=str,
+        required=True,
         default="config.toml",
         help="Path to the configuration file (default: config.toml)",
     )

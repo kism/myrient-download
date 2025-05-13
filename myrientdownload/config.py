@@ -1,18 +1,20 @@
 """Config loading, setup, validating, writing."""
 
 import json
+import time
 from pathlib import Path
-from typing import Any
+from typing import Self
 
 import tomlkit
-from pydantic import BaseModel
+from colorama import Back, Fore, Style, init
+from pydantic import BaseModel, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from . import PROGRAM_NAME, URL, __version__
 from .logger import get_logger
 
-# Logging should be all done at INFO level or higher as the log level hasn't been set yet
-# Modules should all setup logging like this so the log messages include the modules name.
 logger = get_logger(__name__)
+init(autoreset=True)
 
 
 class MyrDLConfig(BaseModel):
@@ -33,6 +35,44 @@ class MyrDLConfig(BaseModel):
     system_disallow_list: list[str] = []
     game_allow_list: list[str] = ["(USA)"]
     game_disallow_list: list[str] = ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"]
+
+    @model_validator(mode="after")
+    def validate_config(self) -> Self:
+        """Validate the configuration values."""
+        if not self.create_and_use_system_directories and len(self.systems) > 1:
+            msg = "Cannot set 'create_and_use_system_directories' to True when multiple systems are specified."
+            raise ValueError(msg)
+        return self
+
+    def print_config_overview(self) -> None:
+        """Print the configuration overview."""
+        print_green = Fore.GREEN + Back.BLACK
+        print_red = Fore.RED + Back.BLACK
+
+        def str_magenta(text: Path | str | list[str]) -> str:
+            return f"{Fore.MAGENTA}{Back.BLACK}{text}{Style.RESET_ALL}"
+
+        def will_will_not(*, condition: bool, thing: str) -> str:
+            if condition:
+                return f"{print_green}Will {thing}{Style.RESET_ALL}"
+            return f"{print_red}Will NOT {thing}{Style.RESET_ALL}"
+
+        msg = f"""
+Configuration:
+  Download Directory: {str_magenta(self.download_dir)}
+  Resolved Myrinet URL: {str_magenta(f"{self.myrinet_url}/{str_magenta(self.myrinet_path)}")}
+  {will_will_not(condition=self.create_and_use_system_directories, thing="create system directories")}
+  {will_will_not(condition=self.skip_existing, thing="skip existing files")}
+  {will_will_not(condition=self.verify_zips, thing="verify existing zips")}
+  Systems:
+    {"\n    ".join(self.systems)}
+  System Allow List: {str_magenta(", ".join(self.system_allow_list) if self.system_allow_list else "<All>")}
+  System Disallow List: {str_magenta(", ".join(self.system_disallow_list) if self.system_disallow_list else "<None>")}
+  Game Allow List: {str_magenta(", ".join(self.game_allow_list) if self.game_allow_list else "<All>")}
+  Game Disallow List: {str_magenta(", ".join(self.game_disallow_list) if self.game_disallow_list else "<None>")}"""
+
+        logger.info(msg)
+        time.sleep(3)  # Pause to allow the user to read the config overview
 
 
 class MyrDLConfigHandler(BaseSettings):
@@ -57,7 +97,21 @@ class MyrDLConfigHandler(BaseSettings):
         self._load_from_toml()
 
         if download_directory_override:
-            self.download_dir = download_directory_override.expanduser().resolve()
+            self.myrient.download_dir = download_directory_override.expanduser().resolve()
+
+        self.myrient.print_config_overview()
+
+    @model_validator(mode="after")
+    def validate_config(self) -> Self:
+        """Validate the settings after initialization."""
+        if not self.myrient.download_dir.exists():
+            logger.warning(
+                "Download directory '%s' does not exist. Creating it in 10 seconds.",
+                self.myrient.download_dir.resolve(),
+            )
+            time.sleep(10)
+            self.myrient.download_dir.mkdir(parents=True, exist_ok=True)
+        return self
 
     def _load_from_toml(self) -> None:
         """Load settings from the TOML file specified in config_path."""
@@ -85,4 +139,5 @@ class MyrDLConfigHandler(BaseSettings):
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
 
         with self.config_path.open("w") as f:
+            f.write(f"# Configuration file for {PROGRAM_NAME} v{__version__} {URL}\n")
             tomlkit.dump(config_data, f)
