@@ -1,7 +1,6 @@
 """Config loading, setup, validating, writing."""
 
 import json
-import time
 from pathlib import Path
 from typing import Self
 
@@ -23,9 +22,6 @@ class MyrDLConfig(BaseModel):
 
     myrinet_url: str = "https://myrient.erista.me/files"
     myrinet_path: str = "No-Intro"  # Database name, see the website
-    download_dir: Path = Path.cwd() / "output"
-    create_and_use_system_directories: bool = True  # System name, per the list
-    create_and_use_database_directories: bool = False  # No-Intro, Redump, etc.
     skip_existing: bool = True
     verify_zips: bool = True  # Check existing zips are valid before skipping
     systems: list[str] = [
@@ -37,13 +33,13 @@ class MyrDLConfig(BaseModel):
     game_allow_list: list[str] = ["(USA)"]
     game_disallow_list: list[str] = ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"]
 
-    @model_validator(mode="after")
-    def validate_config(self) -> Self:
-        """Validate the configuration values."""
-        if not self.create_and_use_system_directories and len(self.systems) > 1:
-            msg = "Cannot set 'create_and_use_system_directories' to True when multiple systems are specified."
-            raise ValueError(msg)
-        return self
+    # @model_validator(mode="after")
+    # def validate_config(self) -> Self:
+    #     """Validate the configuration values."""
+    #     if not self.create_and_use_system_directories and len(self.systems) > 1:
+    #         msg = "Cannot set 'create_and_use_system_directories' to True when multiple systems are specified."
+    #         raise ValueError(msg)
+    #     return self
 
     def print_config_overview(self) -> None:
         """Print the configuration overview."""
@@ -80,7 +76,10 @@ class MyrDLConfigHandler(BaseSettings):
     """Settings loaded from a TOML file."""
 
     # Default values for our settings
-    myrient: MyrDLConfig = MyrDLConfig()
+    myrient_downloader: list[MyrDLConfig] = [MyrDLConfig()]
+    download_dir: Path = Path.cwd() / "output"
+    create_and_use_system_directories: bool = True  # System name, per the list
+    create_and_use_database_directories: bool = False  # No-Intro, Redump, etc.
 
     config_path: Path = Path() / "config.toml"  # Default config path
 
@@ -98,20 +97,20 @@ class MyrDLConfigHandler(BaseSettings):
         self._load_from_toml()
 
         if download_directory_override:
-            self.myrient.download_dir = download_directory_override.expanduser().resolve()
+            self.download_dir = download_directory_override.expanduser().resolve()
 
-        self.myrient.print_config_overview()
+        # self.myrient.print_config_overview()
 
     @model_validator(mode="after")
     def validate_config(self) -> Self:
         """Validate the settings after initialization."""
-        if not self.myrient.download_dir.exists():
+        if not self.download_dir.exists():
             logger.warning(
                 "Download directory '%s' does not exist. Creating it in 10 seconds.",
-                self.myrient.download_dir.resolve(),
+                self.download_dir.resolve(),
             )
             wait_with_dots(10)  # Wait for 10 seconds to give the user a chance to cancel
-            self.myrient.download_dir.mkdir(parents=True, exist_ok=True)
+            self.download_dir.mkdir(parents=True, exist_ok=True)
         return self
 
     def _load_from_toml(self) -> None:
@@ -126,12 +125,14 @@ class MyrDLConfigHandler(BaseSettings):
 
             # Update our settings from the loaded data
             for key, value in config_data.items():
-                if key == "myrient":
-                    self.myrient = MyrDLConfig(**value)
-
-    def get_config(self) -> MyrDLConfig:
-        """Get the current settings."""
-        return self.myrient
+                if key == "myrient_downloader" and isinstance(value, list):
+                    self.myrient_downloader = [
+                        MyrDLConfig(**item) if isinstance(item, dict) else item for item in value
+                    ]
+                elif hasattr(self, key):
+                    setattr(self, key, value)
+                else:
+                    logger.warning("Unknown config key '%s' in %s", key, self.config_path)
 
     def write_config(self) -> None:
         """Write the current settings to a TOML file."""
