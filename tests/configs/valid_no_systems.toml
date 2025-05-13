@@ -1,4 +1,5 @@
 # Configuration file for myrient-download v0.5.3 https://github.com/kism/myrient-download
+[myrient]
 myrinet_url = "https://myrient.erista.me/files"
 myrinet_path = "No-Intro"
 download_dir = "."

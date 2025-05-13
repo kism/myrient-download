@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from . import DESCRIPTION, PROGRAM_NAME, __version__
-from .config import MyrDLConfig
+from .config import MyrDLConfigHandler
 from .logger import get_logger, setup_logger
 from .myr_download import MyrDownloader
 
@@ -15,13 +15,6 @@ logger = get_logger(__name__)
 def main() -> None:
     """Main CLI."""
     parser = argparse.ArgumentParser(description="Download files from Myrient.")
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=str,
-        default="config.toml",
-        help="Path to the configuration file (default: config.toml)",
-    )
     parser.add_argument(
         "--log-level",
         type=str,
@@ -34,20 +27,27 @@ def main() -> None:
         default="",
         help="Specify the directory to save downloaded files, will override and save to the config file",
     )
+    parser.add_argument(
+        "--config",
+        type=str,
+        required=True,
+        default="config.toml",
+        help="Path to the configuration file (default: config.toml)",
+    )
     args = parser.parse_args()
 
     print_program_info()
     setup_logger(args.log_level)
 
-    config_path: Path | None = None
-    if args.config != "":
-        config_path = Path(args.config).expanduser().resolve()
+    config_path = Path(args.config).expanduser().resolve()
 
-    download_directory: Path | None = None
+    download_directory_override: Path | None = None
     if args.directory != "":
-        download_directory = Path(args.directory)
+        download_directory_override = Path(args.directory)
 
-    config = MyrDLConfig(config_path, download_directory)
+    config_handler = MyrDLConfigHandler(config_path, download_directory_override)
+    config_handler.write_config()  # Override the config post-validation
+    config = config_handler.get_config()
 
     mry_downloader = MyrDownloader(config)
     mry_downloader.download_from_system_list()

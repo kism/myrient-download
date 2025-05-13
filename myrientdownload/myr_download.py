@@ -3,10 +3,12 @@
 import logging
 import zipfile
 from pathlib import Path
+from typing import Self
 from urllib.parse import quote  # Add this for URL encoding
 
 import requests
 from colorama import Fore, Style, init
+from pydantic import BaseModel, model_validator
 from tqdm import tqdm
 
 from .config import MyrDLConfig
@@ -19,20 +21,30 @@ logger = get_logger(__name__)
 init()
 
 
-class MyrDownloader:
+class MyrDownloader(BaseModel):
     """Class to manage downloading files from Myrinet."""
+
+    config: MyrDLConfig = MyrDLConfig()
+    stats: dict[str, int] = {
+        "skipped": 0,
+        "downloaded": 0,
+        "failed": 0,
+    }
+    skip_streak: int = 0
 
     def __init__(self, config: MyrDLConfig) -> None:
         """Initialize the downloader with the given configuration."""
+        super().__init__()
         self.config = config
 
-        self.stats = {
-            "skipped": 0,
-            "downloaded": 0,
-            "failed": 0,
-        }
+    @model_validator(mode="after")
+    def _validate_config(self) -> Self:
+        """Validate the configuration after initialization."""
+        if not isinstance(self.config, MyrDLConfig):
+            msg = "Invalid configuration object. Expected MyrDLConfigHandler."
+            raise TypeError(msg)
 
-        self.skip_streak = 0
+        return self
 
     # region: Stats
 
@@ -200,6 +212,7 @@ class MyrDownloader:
 
             # Download the file
             file_url = f"{base_url}{file_name}"
+            logger.info("Downloading: %s", file_name)
             logger.debug("Downloading %s to: %s", file_url, output_file)
             if self._download_file(file_url, output_file):
                 self._report_stat("downloaded")
