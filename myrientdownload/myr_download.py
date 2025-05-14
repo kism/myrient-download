@@ -11,7 +11,7 @@ from colorama import Fore, Style, init
 from pydantic import BaseModel, model_validator
 from tqdm import tqdm
 
-from .config import MyrDLConfigHandler, MyrDLConfig
+from .config import MyrDLConfig, MyrDLConfigHandler
 from .constants import FUN_TQDM_LOADING_BAR, HTTP_HEADERS, REQUESTS_TIMEOUT
 from .logger import get_logger
 from .myr_files import get_files_list
@@ -162,6 +162,7 @@ class MyrDownloader(BaseModel):
             if self.config.create_and_use_database_directories:
                 download_dir = self.config.download_dir / myrient_path / system
             else:
+                print(type(self.config.download_dir))
                 download_dir = self.config.download_dir / system
         if self.config.create_and_use_database_directories and not self.config.create_and_use_system_directories:
             msg = "Cannot create database directories without system directories"

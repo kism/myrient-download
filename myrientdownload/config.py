@@ -94,6 +94,7 @@ class MyrDLConfigHandler(BaseSettings):
         """Initialize settings and load from a TOML file if provided."""
         super().__init__()  # Initialize with default values first
         self.config_path = config_path
+
         self._load_from_toml()
 
         if download_directory_override:
@@ -111,6 +112,7 @@ class MyrDLConfigHandler(BaseSettings):
             )
             wait_with_dots(10)  # Wait for 10 seconds to give the user a chance to cancel
             self.download_dir.mkdir(parents=True, exist_ok=True)
+
         return self
 
     def _load_from_toml(self) -> None:
@@ -129,6 +131,8 @@ class MyrDLConfigHandler(BaseSettings):
                     self.myrient_downloader = [
                         MyrDLConfig(**item) if isinstance(item, dict) else item for item in value
                     ]
+                elif key == "download_dir":
+                    self.download_dir = Path(value).expanduser().resolve()
                 elif hasattr(self, key):
                     setattr(self, key, value)
                 else:
