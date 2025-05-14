@@ -11,7 +11,7 @@ from colorama import Fore, Style, init
 from pydantic import BaseModel, model_validator
 from tqdm import tqdm
 
-from .config import MyrDLConfigHandler
+from .config import MyrDLConfigHandler, MyrDLConfig
 from .constants import FUN_TQDM_LOADING_BAR, HTTP_HEADERS, REQUESTS_TIMEOUT
 from .logger import get_logger
 from .myr_files import get_files_list
@@ -86,7 +86,7 @@ class MyrDownloader(BaseModel):
         for myr_downloader in self.config.myrient_downloader:
             for system in myr_downloader.systems:
                 print()  # noqa: T201 # Add a newline for better readability
-                system_url = f"{myr_downloader.myrinet_url}/{myr_downloader.myrinet_path}/{system}/"
+                system_url = f"{myr_downloader.myrient_url}/{myr_downloader.myrient_path}/{system}/"
                 files_list = get_files_list(system_url)
 
                 # Apply filters
@@ -106,6 +106,7 @@ class MyrDownloader(BaseModel):
                     self._download_files(
                         filtered_files,
                         system_url,
+                        myr_downloader=myr_downloader,
                         system=system,
                     )
                 else:
@@ -154,12 +155,12 @@ class MyrDownloader(BaseModel):
 
         return True
 
-    def _get_download_dir(self, system: str) -> Path:
+    def _get_download_dir(self, system: str, myrient_path: str) -> Path:
         """Get the download directory based on the configuration and system."""
         download_dir = self.config.download_dir
         if self.config.create_and_use_system_directories:
             if self.config.create_and_use_database_directories:
-                download_dir = self.config.download_dir / self.config.myrinet_path / system
+                download_dir = self.config.download_dir / myrient_path / system
             else:
                 download_dir = self.config.download_dir / system
         if self.config.create_and_use_database_directories and not self.config.create_and_use_system_directories:
@@ -174,12 +175,13 @@ class MyrDownloader(BaseModel):
         self,
         filtered_files: list[str],
         base_url: str,
+        myr_downloader: MyrDLConfig,
         *,
         system: str = "",
     ) -> None:
         """Download files from Myrient based on the filtered list."""
         # Create system-specific directory
-        download_dir = self._get_download_dir(system=system)
+        download_dir = self._get_download_dir(system=system, myrient_path=myr_downloader.myrient_path)
 
         # Remove any files that end with .part in the download directory
         for part_file in download_dir.glob("*.part"):
@@ -191,14 +193,14 @@ class MyrDownloader(BaseModel):
             output_file = download_dir / file_name
 
             # Check that zip file isn't completely cooked
-            if self.config.verify_zips and output_file.exists() and str(output_file).endswith(".zip"):
+            if myr_downloader.verify_zips and output_file.exists() and str(output_file).endswith(".zip"):
                 try:
                     zipfile.ZipFile(output_file)
                 except zipfile.BadZipFile:
                     logger.warning("Deleting broken zip file: %s", output_file)
                     output_file.unlink()
 
-            if self.config.skip_existing and output_file.exists():
+            if myr_downloader.skip_existing and output_file.exists():
                 logger.debug("Skipping %s - already exists", file_name)
                 self._report_stat("skipped")
                 continue

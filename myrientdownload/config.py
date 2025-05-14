@@ -20,8 +20,8 @@ init(autoreset=True)
 class MyrDLConfig(BaseModel):
     """Settings for the Myrient downloader."""
 
-    myrinet_url: str = "https://myrient.erista.me/files"
-    myrinet_path: str = "No-Intro"  # Database name, see the website
+    myrient_url: str = "https://myrient.erista.me/files"
+    myrient_path: str = "No-Intro"  # Database name, see the website
     skip_existing: bool = True
     verify_zips: bool = True  # Check existing zips are valid before skipping
     systems: list[str] = [
@@ -57,7 +57,7 @@ class MyrDLConfig(BaseModel):
         msg = f"""
 Configuration:
   Download Directory: {str_magenta(self.download_dir)}
-  Resolved Myrinet URL: {str_magenta(f"{self.myrinet_url}/{str_magenta(self.myrinet_path)}")}
+  Resolved Myrinet URL: {str_magenta(f"{self.myrient_url}/{str_magenta(self.myrient_path)}")}
   {will_will_not(condition=self.create_and_use_system_directories, thing="create system directories")}
   {will_will_not(condition=self.skip_existing, thing="skip existing files")}
   {will_will_not(condition=self.verify_zips, thing="verify existing zips")}
