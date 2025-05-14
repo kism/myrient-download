@@ -162,7 +162,6 @@ class MyrDownloader(BaseModel):
             if self.config.create_and_use_database_directories:
                 download_dir = self.config.download_dir / myrient_path / system
             else:
-                print(type(self.config.download_dir))
                 download_dir = self.config.download_dir / system
         if self.config.create_and_use_database_directories and not self.config.create_and_use_system_directories:
             msg = "Cannot create database directories without system directories"

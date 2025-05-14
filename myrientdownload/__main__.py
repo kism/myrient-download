@@ -46,6 +46,7 @@ def main() -> None:
         download_directory_override = Path(args.directory)
 
     config = MyrDLConfigHandler(config_path, download_directory_override)
+    config.print_config_overview()
     config.write_config()  # Override the config post-validation
 
     mry_downloader = MyrDownloader(config)

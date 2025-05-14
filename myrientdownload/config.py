@@ -41,36 +41,6 @@ class MyrDLConfig(BaseModel):
     #         raise ValueError(msg)
     #     return self
 
-    def print_config_overview(self) -> None:
-        """Print the configuration overview."""
-        print_green = Fore.GREEN + Back.BLACK
-        print_red = Fore.RED + Back.BLACK
-
-        def str_magenta(text: Path | str | list[str]) -> str:
-            return f"{Fore.MAGENTA}{Back.BLACK}{text}{Style.RESET_ALL}"
-
-        def will_will_not(*, condition: bool, thing: str) -> str:
-            if condition:
-                return f"{print_green}Will {thing}{Style.RESET_ALL}"
-            return f"{print_red}Will NOT {thing}{Style.RESET_ALL}"
-
-        msg = f"""
-Configuration:
-  Download Directory: {str_magenta(self.download_dir)}
-  Resolved Myrinet URL: {str_magenta(f"{self.myrient_url}/{str_magenta(self.myrient_path)}")}
-  {will_will_not(condition=self.create_and_use_system_directories, thing="create system directories")}
-  {will_will_not(condition=self.skip_existing, thing="skip existing files")}
-  {will_will_not(condition=self.verify_zips, thing="verify existing zips")}
-  Systems:
-    {"\n    ".join(self.systems)}
-  System Allow List: {str_magenta(", ".join(self.system_allow_list) if self.system_allow_list else "<All>")}
-  System Disallow List: {str_magenta(", ".join(self.system_disallow_list) if self.system_disallow_list else "<None>")}
-  Game Allow List: {str_magenta(", ".join(self.game_allow_list) if self.game_allow_list else "<All>")}
-  Game Disallow List: {str_magenta(", ".join(self.game_disallow_list) if self.game_disallow_list else "<None>")}"""
-
-        logger.info(msg)
-        wait_with_dots(5)  # Pause to allow the user to read the config overview
-
 
 class MyrDLConfigHandler(BaseSettings):
     """Settings loaded from a TOML file."""
@@ -100,8 +70,6 @@ class MyrDLConfigHandler(BaseSettings):
         if download_directory_override:
             self.download_dir = download_directory_override.expanduser().resolve()
 
-        # self.myrient.print_config_overview()
-
     @model_validator(mode="after")
     def validate_config(self) -> Self:
         """Validate the settings after initialization."""
@@ -114,6 +82,42 @@ class MyrDLConfigHandler(BaseSettings):
             self.download_dir.mkdir(parents=True, exist_ok=True)
 
         return self
+
+    def print_config_overview(self) -> None:
+        """Print the configuration overview."""
+        print_green = Fore.GREEN + Back.BLACK
+        print_red = Fore.RED + Back.BLACK
+
+        def str_magenta(text: Path | str | list[str]) -> str:
+            return f"{Fore.MAGENTA}{Back.BLACK}{text}{Style.RESET_ALL}"
+
+        def will_will_not(*, condition: bool, thing: str) -> str:
+            if condition:
+                return f"{print_green}Will {thing}{Style.RESET_ALL}"
+            return f"{print_red}Will NOT {thing}{Style.RESET_ALL}"
+
+        msg = f"""
+Global Settings:
+  Download Directory: {str_magenta(self.download_dir)}
+  {will_will_not(condition=self.create_and_use_system_directories, thing="create system directories")}
+  {will_will_not(condition=self.create_and_use_database_directories, thing="create database directories")}
+"""
+
+        for n, myr_downloader in enumerate(self.myrient_downloader):
+            msg += f"""
+Myrient Downloader {n + 1}:
+  Resolved Myrinet URL: {str_magenta(f"{myr_downloader.myrient_url}/{str_magenta(myr_downloader.myrient_path)}")}
+  {will_will_not(condition=myr_downloader.skip_existing, thing="skip existing files")}
+  {will_will_not(condition=myr_downloader.verify_zips, thing="verify existing zips")}
+  Systems:
+    {"\n    ".join(myr_downloader.systems)}
+  System Allow List: {str_magenta(", ".join(myr_downloader.system_allow_list) if myr_downloader.system_allow_list else "<All>")}
+  System Disallow List: {str_magenta(", ".join(myr_downloader.system_disallow_list) if myr_downloader.system_disallow_list else "<None>")}
+  Game Allow List: {str_magenta(", ".join(myr_downloader.game_allow_list) if myr_downloader.game_allow_list else "<All>")}
+  Game Disallow List: {str_magenta(", ".join(myr_downloader.game_disallow_list) if myr_downloader.game_disallow_list else "<None>")}
+"""
+        logger.info(msg)
+        wait_with_dots(5)  # Pause to allow the user to read the config overview
 
     def _load_from_toml(self) -> None:
         """Load settings from the TOML file specified in config_path."""
@@ -140,6 +144,9 @@ class MyrDLConfigHandler(BaseSettings):
 
     def write_config(self) -> None:
         """Write the current settings to a TOML file."""
+        with self.config_path.open("r") as f:
+            existing_data = tomlkit.load(f)
+
         logger.info("Writing config to %s", self.config_path)
         config_data = json.loads(self.model_dump_json())  # This is how we make the object safe for tomlkit
         config_data.pop("config_path", None)  # Remove config_path from the data to be written
@@ -148,6 +155,17 @@ class MyrDLConfigHandler(BaseSettings):
         if not self.config_path.parent.exists():
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
 
+        if not self.config_path.exists():
+            self.config_path.touch()
+
+        new_file_content_str = f"# Configuration file for {PROGRAM_NAME} v{__version__} {URL}\n"
+        new_file_content_str += tomlkit.dumps(config_data)
+
+        if existing_data != config_data: # The new object will be valid, so we back up the old one
+            backup_file = self.config_path.parent / f"{self.config_path.name}.bak"
+            logger.warning("Validation has changed the config file, backing up the old one to %s", backup_file)
+            with backup_file.open("w") as f:
+                f.write(tomlkit.dumps(existing_data))
+
         with self.config_path.open("w") as f:
-            f.write(f"# Configuration file for {PROGRAM_NAME} v{__version__} {URL}\n")
-            tomlkit.dump(config_data, f)
+            f.write(new_file_content_str)
