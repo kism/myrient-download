@@ -11,7 +11,7 @@ from colorama import Fore, Style, init
 from pydantic import BaseModel, model_validator
 from tqdm import tqdm
 
-from .config import MyrDLConfig
+from .config import MyrDLConfigHandler
 from .constants import FUN_TQDM_LOADING_BAR, HTTP_HEADERS, REQUESTS_TIMEOUT
 from .logger import get_logger
 from .myr_files import get_files_list
@@ -24,7 +24,7 @@ init()
 class MyrDownloader(BaseModel):
     """Class to manage downloading files from Myrinet."""
 
-    config: MyrDLConfig = MyrDLConfig()
+    config: MyrDLConfigHandler = MyrDLConfigHandler(Path() / "config.toml")
     stats: dict[str, int] = {
         "skipped": 0,
         "downloaded": 0,
@@ -32,7 +32,7 @@ class MyrDownloader(BaseModel):
     }
     skip_streak: int = 0
 
-    def __init__(self, config: MyrDLConfig) -> None:
+    def __init__(self, config: MyrDLConfigHandler) -> None:
         """Initialize the downloader with the given configuration."""
         super().__init__()
         self.config = config
@@ -40,7 +40,7 @@ class MyrDownloader(BaseModel):
     @model_validator(mode="after")
     def _validate_config(self) -> Self:
         """Validate the configuration after initialization."""
-        if not isinstance(self.config, MyrDLConfig):
+        if not isinstance(self.config, MyrDLConfigHandler):
             msg = "Invalid configuration object. Expected MyrDLConfigHandler."
             raise TypeError(msg)
 
@@ -83,32 +83,33 @@ class MyrDownloader(BaseModel):
         print()  # noqa: T201 # Add a newline for better readability
         logger.info("Starting download from Myrinet...")
 
-        for system in self.config.systems:
-            print()  # noqa: T201 # Add a newline for better readability
-            system_url = f"{self.config.myrinet_url}/{self.config.myrinet_path}/{system}/"
-            files_list = get_files_list(system_url)
+        for myr_downloader in self.config.myrient_downloader:
+            for system in myr_downloader.systems:
+                print()  # noqa: T201 # Add a newline for better readability
+                system_url = f"{myr_downloader.myrinet_url}/{myr_downloader.myrinet_path}/{system}/"
+                files_list = get_files_list(system_url)
 
-            # Apply filters
-            if self.config.game_allow_list == []:  # Small hack to allow all files if nothing is specified
-                self.config.game_allow_list = ["."]
-            filtered_files = [
-                f
-                for f in files_list
-                if any(term in f for term in self.config.game_allow_list)
-                and not any(term in f for term in self.config.game_disallow_list)
-            ]
+                # Apply filters
+                if myr_downloader.game_allow_list == []:  # Small hack to allow all files if nothing is specified
+                    myr_downloader.game_allow_list = ["."]
+                filtered_files = [
+                    f
+                    for f in files_list
+                    if any(term in f for term in myr_downloader.game_allow_list)
+                    and not any(term in f for term in myr_downloader.game_disallow_list)
+                ]
 
-            if filtered_files:
-                msg = f"Found {len(filtered_files)} matching files for {system}"
-                logger.info(msg)
+                if filtered_files:
+                    msg = f"Found {len(filtered_files)} matching files for {system}"
+                    logger.info(msg)
 
-                self._download_files(
-                    filtered_files,
-                    system_url,
-                    system=system,
-                )
-            else:
-                logger.info("No matching files found for %s", system)
+                    self._download_files(
+                        filtered_files,
+                        system_url,
+                        system=system,
+                    )
+                else:
+                    logger.info("No matching files found for %s", system)
 
         self.print_stats()
         print()  # noqa: T201 # Add a newline for better readability
