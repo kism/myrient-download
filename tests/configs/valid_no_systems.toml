@@ -1,13 +1,13 @@
-# Configuration file for myrient-download v0.5.3 https://github.com/kism/myrient-download
-[myrient]
-myrient_url = "https://myrient.erista.me/files"
-myrient_path = "No-Intro"
-download_dir = "."
+# Configuration file for myrient-download v1.0.4 https://github.com/kism/myrient-download
+download_dir = "/home/kism/src/myrient-download/output"
 create_and_use_system_directories = true
+create_and_use_database_directories = false
+[[myrient_downloader]]
+myrient_url = "https://myrient.erista.me/files"
+myrient_path = "Redump"
 skip_existing = true
 verify_zips = true
 systems = []
-system_allow_list = []
 system_disallow_list = []
-game_allow_list = []
-game_disallow_list = []
+game_allow_list = ["(USA)"]
+game_disallow_list = ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"]
