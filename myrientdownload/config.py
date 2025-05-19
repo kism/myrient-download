@@ -16,6 +16,8 @@ from .logger import get_logger
 logger = get_logger(__name__)
 init(autoreset=True)
 
+CONFIG_LOCATION = Path("config.toml")
+
 
 class MyrDLConfig(BaseModel):
     """Settings for the Myrient downloader."""
@@ -51,24 +53,15 @@ class MyrDLConfigHandler(BaseSettings):
     create_and_use_system_directories: bool = True  # System name, per the list
     create_and_use_database_directories: bool = False  # No-Intro, Redump, etc.
 
-    config_path: Path = Path() / "config.toml"  # Default config path
+    config_path: Path = CONFIG_LOCATION  # Default config path
 
     # Configure settings class
     model_config = SettingsConfigDict(
         env_prefix="APP_",  # environment variables with APP_ prefix will override settings
         env_nested_delimiter="__",  # APP_NESTED__NESTED_FIELD=value
         json_encoders={Path: str},
+        toml_file=CONFIG_LOCATION,
     )
-
-    def __init__(self, config_path: Path, download_directory_override: Path | None = None) -> None:
-        """Initialize settings and load from a TOML file if provided."""
-        super().__init__()  # Initialize with default values first
-        self.config_path = config_path
-
-        self._load_from_toml()
-
-        if download_directory_override:
-            self.download_dir = download_directory_override.expanduser().resolve()
 
     @model_validator(mode="after")
     def validate_config(self) -> Self:
@@ -119,37 +112,17 @@ Myrient Downloader {n + 1}:
         logger.info(msg)
         wait_with_dots(5)  # Pause to allow the user to read the config overview
 
-    def _load_from_toml(self) -> None:
-        """Load settings from the TOML file specified in config_path."""
-        if self.config_path.is_dir():
-            msg = f"Config path '{self.config_path}' is a directory, not a file."
-            raise ValueError(msg)
-
-        if self.config_path.is_file():
-            with self.config_path.open("r") as f:
-                config_data = tomlkit.load(f)
-
-            # Update our settings from the loaded data
-            for key, value in config_data.items():
-                if key == "myrient_downloader" and isinstance(value, list):
-                    self.myrient_downloader = [
-                        MyrDLConfig(**item) if isinstance(item, dict) else item for item in value
-                    ]
-                elif key == "download_dir":
-                    self.download_dir = Path(value).expanduser().resolve()
-                elif hasattr(self, key):
-                    setattr(self, key, value)
-                else:
-                    logger.warning("Unknown config key '%s' in %s", key, self.config_path)
-
     def write_config(self) -> None:
         """Write the current settings to a TOML file."""
-        with self.config_path.open("r") as f:
-            existing_data = tomlkit.load(f)
+        if not self.config_path.exists():
+            logger.warning("Config file does not exist, creating it at %s", self.config_path)
+            self.config_path.touch()
+        else:
+            with self.config_path.open("r") as f:
+                existing_data = tomlkit.load(f)
 
         logger.info("Writing config to %s", self.config_path)
         config_data = json.loads(self.model_dump_json())  # This is how we make the object safe for tomlkit
-        config_data.pop("config_path", None)  # Remove config_path from the data to be written
 
         # Write to the TOML file
         if not self.config_path.parent.exists():
@@ -161,7 +134,7 @@ Myrient Downloader {n + 1}:
         new_file_content_str = f"# Configuration file for {PROGRAM_NAME} v{__version__} {URL}\n"
         new_file_content_str += tomlkit.dumps(config_data)
 
-        if existing_data != config_data: # The new object will be valid, so we back up the old one
+        if existing_data != config_data:  # The new object will be valid, so we back up the old one
             backup_file = self.config_path.parent / f"{self.config_path.name}.bak"
             logger.warning("Validation has changed the config file, backing up the old one to %s", backup_file)
             with backup_file.open("w") as f:
