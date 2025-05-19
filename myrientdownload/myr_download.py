@@ -24,7 +24,7 @@ init()
 class MyrDownloader(BaseModel):
     """Class to manage downloading files from Myrinet."""
 
-    config: MyrDLConfigHandler = MyrDLConfigHandler(Path() / "config.toml")
+    config: MyrDLConfigHandler = MyrDLConfigHandler()
     stats: dict[str, int] = {
         "skipped": 0,
         "downloaded": 0,

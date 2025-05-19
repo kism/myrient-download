@@ -35,14 +35,6 @@ class MyrDLConfig(BaseModel):
     game_allow_list: list[str] = ["(USA)"]
     game_disallow_list: list[str] = ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"]
 
-    # @model_validator(mode="after")
-    # def validate_config(self) -> Self:
-    #     """Validate the configuration values."""
-    #     if not self.create_and_use_system_directories and len(self.systems) > 1:
-    #         msg = "Cannot set 'create_and_use_system_directories' to True when multiple systems are specified."
-    #         raise ValueError(msg)
-    #     return self
-
 
 class MyrDLConfigHandler(BaseSettings):
     """Settings loaded from a TOML file."""
@@ -59,7 +51,6 @@ class MyrDLConfigHandler(BaseSettings):
         env_nested_delimiter="__",  # APP_NESTED__NESTED_FIELD=value
         json_encoders={Path: str},
         toml_file=CONFIG_LOCATION,
-        # toml_file="config.toml",
     )
 
     @classmethod  # This is magic, required and I don't understand it
@@ -83,6 +74,14 @@ class MyrDLConfigHandler(BaseSettings):
             )
             wait_with_dots(10)  # Wait for 10 seconds to give the user a chance to cancel
             self.download_dir.mkdir(parents=True, exist_ok=True)
+
+        total_systems = [
+            system for myrient_downloader in self.myrient_downloader for system in myrient_downloader.systems
+        ]
+
+        if not self.create_and_use_system_directories and len(total_systems) > 1:
+            msg = "Cannot set 'create_and_use_system_directories' to True when multiple systems are specified."
+            raise ValueError(msg)
 
         return self
 
@@ -118,7 +117,7 @@ Myrient Downloader {n + 1}:
   System Disallow List: {str_magenta(", ".join(myr_downloader.system_disallow_list) if myr_downloader.system_disallow_list else "<None>")}
   Game Allow List: {str_magenta(", ".join(myr_downloader.game_allow_list) if myr_downloader.game_allow_list else "<All>")}
   Game Disallow List: {str_magenta(", ".join(myr_downloader.game_disallow_list) if myr_downloader.game_disallow_list else "<None>")}
-"""
+"""  # noqa: E501 # Not going to do anything about a `"""`
         logger.info(msg)
         wait_with_dots(5)  # Pause to allow the user to read the config overview
 
