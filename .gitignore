@@ -1,6 +1,7 @@
 # This repo
 output*/
 config.toml*
+config*.toml*
 *.zip
 
 # Byte-compiled / optimized / DLL files

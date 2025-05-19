@@ -37,28 +37,20 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    print_program_info()
+    logger.info("%s v%s %s", PROGRAM_NAME, __version__, DESCRIPTION)
     setup_logger(args.log_level)
 
     config_path = Path(args.config).expanduser().resolve()
 
-    download_directory_override: Path | None = None
-    if args.directory != "":
-        download_directory_override = Path(args.directory)
-
     myr_config.CONFIG_LOCATION = config_path
     config = myr_config.MyrDLConfigHandler()
+    if args.directory != "":
+        config.download_dir = Path(args.directory)
     config.print_config_overview()
     config.write_config()  # Override the config post-validation
 
     mry_downloader = MyrDownloader(config)
     mry_downloader.download_from_system_list()
-
-
-def print_program_info() -> None:
-    """Print program information."""
-    msg = f"{PROGRAM_NAME} v{__version__}, {DESCRIPTION}"
-    logger.info(msg)
 
 
 if __name__ == "__main__":
