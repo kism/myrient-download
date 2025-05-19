@@ -45,7 +45,7 @@ def main() -> None:
     if args.directory != "":
         download_directory_override = Path(args.directory)
 
-    config = MyrDLConfigHandler(config_path, download_directory_override)
+    config = MyrDLConfigHandler()
     config.print_config_overview()
     config.write_config()  # Override the config post-validation
 

@@ -7,7 +7,7 @@ from typing import Self
 import tomlkit
 from colorama import Back, Fore, Style, init
 from pydantic import BaseModel, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, TomlConfigSettingsSource
 
 from . import PROGRAM_NAME, URL, __version__
 from .helpers import wait_with_dots
@@ -53,15 +53,25 @@ class MyrDLConfigHandler(BaseSettings):
     create_and_use_system_directories: bool = True  # System name, per the list
     create_and_use_database_directories: bool = False  # No-Intro, Redump, etc.
 
-    config_path: Path = CONFIG_LOCATION  # Default config path
-
     # Configure settings class
     model_config = SettingsConfigDict(
         env_prefix="APP_",  # environment variables with APP_ prefix will override settings
         env_nested_delimiter="__",  # APP_NESTED__NESTED_FIELD=value
         json_encoders={Path: str},
         toml_file=CONFIG_LOCATION,
+        # toml_file="config.toml",
     )
+
+    @classmethod  # This is magic, required and I don't understand it
+    def settings_customise_sources(  # noqa: D102
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,  # noqa: ARG003
+        env_settings: PydanticBaseSettingsSource,  # noqa: ARG003
+        dotenv_settings: PydanticBaseSettingsSource,  # noqa: ARG003
+        file_secret_settings: PydanticBaseSettingsSource,  # noqa: ARG003
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (TomlConfigSettingsSource(settings_cls),)
 
     @model_validator(mode="after")
     def validate_config(self) -> Self:
@@ -115,31 +125,31 @@ Myrient Downloader {n + 1}:
     def write_config(self) -> None:
         """Write the current settings to a TOML file."""
         config_data = json.loads(self.model_dump_json())  # This is how we make the object safe for tomlkit
-        if not self.config_path.exists():
-            logger.warning("Config file does not exist, creating it at %s", self.config_path)
-            self.config_path.touch()
+        if not CONFIG_LOCATION.exists():
+            logger.warning("Config file does not exist, creating it at %s", CONFIG_LOCATION)
+            CONFIG_LOCATION.touch()
             existing_data = config_data
         else:
-            with self.config_path.open("r") as f:
+            with CONFIG_LOCATION.open("r") as f:
                 existing_data = tomlkit.load(f)
 
-        logger.info("Writing config to %s", self.config_path)
+        logger.info("Writing config to %s", CONFIG_LOCATION)
 
         # Write to the TOML file
-        if not self.config_path.parent.exists():
-            self.config_path.parent.mkdir(parents=True, exist_ok=True)
+        if not CONFIG_LOCATION.parent.exists():
+            CONFIG_LOCATION.parent.mkdir(parents=True, exist_ok=True)
 
-        if not self.config_path.exists():
-            self.config_path.touch()
+        if not CONFIG_LOCATION.exists():
+            CONFIG_LOCATION.touch()
 
         new_file_content_str = f"# Configuration file for {PROGRAM_NAME} v{__version__} {URL}\n"
         new_file_content_str += tomlkit.dumps(config_data)
 
         if existing_data != config_data:  # The new object will be valid, so we back up the old one
-            backup_file = self.config_path.parent / f"{self.config_path.name}.bak"
+            backup_file = CONFIG_LOCATION.parent / f"{CONFIG_LOCATION.name}.bak"
             logger.warning("Validation has changed the config file, backing up the old one to %s", backup_file)
             with backup_file.open("w") as f:
                 f.write(tomlkit.dumps(existing_data))
 
-        with self.config_path.open("w") as f:
+        with CONFIG_LOCATION.open("w") as f:
             f.write(new_file_content_str)
