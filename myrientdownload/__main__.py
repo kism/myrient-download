@@ -3,8 +3,9 @@
 import argparse
 from pathlib import Path
 
+import myrientdownload.config as myr_config
+
 from . import DESCRIPTION, PROGRAM_NAME, __version__
-from .config import MyrDLConfigHandler
 from .logger import get_logger, setup_logger
 from .myr_download import MyrDownloader
 
@@ -45,7 +46,8 @@ def main() -> None:
     if args.directory != "":
         download_directory_override = Path(args.directory)
 
-    config = MyrDLConfigHandler()
+    myr_config.CONFIG_LOCATION = config_path
+    config = myr_config.MyrDLConfigHandler()
     config.print_config_overview()
     config.write_config()  # Override the config post-validation
 
