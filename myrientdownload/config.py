@@ -114,15 +114,16 @@ Myrient Downloader {n + 1}:
 
     def write_config(self) -> None:
         """Write the current settings to a TOML file."""
+        config_data = json.loads(self.model_dump_json())  # This is how we make the object safe for tomlkit
         if not self.config_path.exists():
             logger.warning("Config file does not exist, creating it at %s", self.config_path)
             self.config_path.touch()
+            existing_data = config_data
         else:
             with self.config_path.open("r") as f:
                 existing_data = tomlkit.load(f)
 
         logger.info("Writing config to %s", self.config_path)
-        config_data = json.loads(self.model_dump_json())  # This is how we make the object safe for tomlkit
 
         # Write to the TOML file
         if not self.config_path.parent.exists():
