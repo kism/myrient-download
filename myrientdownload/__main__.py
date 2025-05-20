@@ -45,7 +45,7 @@ def main() -> None:
     if args.directory != "":
         config.download_dir = Path(args.directory)
     config.print_config_overview()
-    config.write_config()  # Override the config post-validation
+    config.write_config(config_path)  # Override the config post-validation
 
     mry_downloader = MyrDownloader(config)
     mry_downloader.download_from_system_list()

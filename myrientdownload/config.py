@@ -16,8 +16,6 @@ from .logger import get_logger
 logger = get_logger(__name__)
 init(autoreset=True)
 
-CONFIG_LOCATION = Path("config.toml")
-
 
 class MyrDLDownloaderConfig(BaseModel):
     """Settings for the Myrient downloader."""
@@ -102,36 +100,36 @@ Myrient Downloader {n + 1}:
         logger.info(msg)
         wait_with_dots(5)  # Pause to allow the user to read the config overview
 
-    def write_config(self) -> None:
+    def write_config(self, config_location: Path) -> None:
         """Write the current settings to a TOML file."""
         config_data = json.loads(self.model_dump_json())  # This is how we make the object safe for tomlkit
-        if not CONFIG_LOCATION.exists():
-            logger.warning("Config file does not exist, creating it at %s", CONFIG_LOCATION)
-            CONFIG_LOCATION.touch()
+        if not config_location.exists():
+            logger.warning("Config file does not exist, creating it at %s", config_location)
+            config_location.touch()
             existing_data = config_data
         else:
-            with CONFIG_LOCATION.open("r") as f:
+            with config_location.open("r") as f:
                 existing_data = tomlkit.load(f)
 
-        logger.info("Writing config to %s", CONFIG_LOCATION)
+        logger.info("Writing config to %s", config_location)
 
         # Write to the TOML file
-        if not CONFIG_LOCATION.parent.exists():
-            CONFIG_LOCATION.parent.mkdir(parents=True, exist_ok=True)
+        if not config_location.parent.exists():
+            config_location.parent.mkdir(parents=True, exist_ok=True)
 
-        if not CONFIG_LOCATION.exists():
-            CONFIG_LOCATION.touch()
+        if not config_location.exists():
+            config_location.touch()
 
         new_file_content_str = f"# Configuration file for {PROGRAM_NAME} v{__version__} {URL}\n"
         new_file_content_str += tomlkit.dumps(config_data)
 
         if existing_data != config_data:  # The new object will be valid, so we back up the old one
-            backup_file = CONFIG_LOCATION.parent / f"{CONFIG_LOCATION.name}.bak"
+            backup_file = config_location.parent / f"{config_location.name}.bak"
             logger.warning("Validation has changed the config file, backing up the old one to %s", backup_file)
             with backup_file.open("w") as f:
                 f.write(tomlkit.dumps(existing_data))
 
-        with CONFIG_LOCATION.open("w") as f:
+        with config_location.open("w") as f:
             f.write(new_file_content_str)
 
 
