@@ -11,7 +11,7 @@ from colorama import Fore, Style, init
 from pydantic import BaseModel, model_validator
 from tqdm import tqdm
 
-from .config import MyrDLConfig, MyrDLConfigHandler
+from .config import MyrDLConfig, MyrDLDownloaderConfig
 from .constants import FUN_TQDM_LOADING_BAR, HTTP_HEADERS, REQUESTS_TIMEOUT
 from .logger import get_logger
 from .myr_files import get_files_list
@@ -24,7 +24,7 @@ init()
 class MyrDownloader(BaseModel):
     """Class to manage downloading files from Myrinet."""
 
-    config: MyrDLConfigHandler = MyrDLConfigHandler()
+    config: MyrDLConfig = MyrDLConfig()
     stats: dict[str, int] = {
         "skipped": 0,
         "downloaded": 0,
@@ -32,7 +32,7 @@ class MyrDownloader(BaseModel):
     }
     skip_streak: int = 0
 
-    def __init__(self, config: MyrDLConfigHandler) -> None:
+    def __init__(self, config: MyrDLConfig) -> None:
         """Initialize the downloader with the given configuration."""
         super().__init__()
         self.config = config
@@ -40,8 +40,8 @@ class MyrDownloader(BaseModel):
     @model_validator(mode="after")
     def _validate_config(self) -> Self:
         """Validate the configuration after initialization."""
-        if not isinstance(self.config, MyrDLConfigHandler):
-            msg = "Invalid configuration object. Expected MyrDLConfigHandler."
+        if not isinstance(self.config, MyrDLConfig):
+            msg = "Invalid configuration object. Expected MyrDLConfig."
             raise TypeError(msg)
 
         return self
@@ -175,7 +175,7 @@ class MyrDownloader(BaseModel):
         self,
         filtered_files: list[str],
         base_url: str,
-        myr_downloader: MyrDLConfig,
+        myr_downloader: MyrDLDownloaderConfig,
         *,
         system: str = "",
     ) -> None:

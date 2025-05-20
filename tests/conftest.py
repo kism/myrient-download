@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from myrientdownload.config import MyrDLConfig
+from myrientdownload.config import MyrDLDownloaderConfig
 
 TEST_CONFIGS_LOCATION = Path.cwd() / "tests" / "configs"
 
@@ -14,9 +14,9 @@ def pytest_configure():
 
 
 @pytest.fixture
-def myr_default_config(tmp_path, no_sleep) -> MyrDLConfig:
+def myr_default_config(tmp_path, no_sleep) -> MyrDLDownloaderConfig:
     """Fixture for MyCoolObject."""
-    return MyrDLConfig()
+    return MyrDLDownloaderConfig()
 
 
 @pytest.fixture

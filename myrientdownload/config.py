@@ -7,7 +7,7 @@ from typing import Self
 import tomlkit
 from colorama import Back, Fore, Style, init
 from pydantic import BaseModel, model_validator
-from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, TomlConfigSettingsSource
+from pydantic_settings import BaseSettings
 
 from . import PROGRAM_NAME, URL, __version__
 from .helpers import wait_with_dots
@@ -19,7 +19,7 @@ init(autoreset=True)
 CONFIG_LOCATION = Path("config.toml")
 
 
-class MyrDLConfig(BaseModel):
+class MyrDLDownloaderConfig(BaseModel):
     """Settings for the Myrient downloader."""
 
     myrient_url: str = "https://myrient.erista.me/files"
@@ -36,33 +36,14 @@ class MyrDLConfig(BaseModel):
     game_disallow_list: list[str] = ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"]
 
 
-class MyrDLConfigHandler(BaseSettings):
+class MyrDLConfig(BaseSettings):
     """Settings loaded from a TOML file."""
 
     # Default values for our settings
-    myrient_downloader: list[MyrDLConfig] = [MyrDLConfig()]
+    myrient_downloader: list[MyrDLDownloaderConfig] = [MyrDLDownloaderConfig()]
     download_dir: Path = Path.cwd() / "output"
     create_and_use_system_directories: bool = True  # System name, per the list
     create_and_use_database_directories: bool = False  # No-Intro, Redump, etc.
-
-    # Configure settings class
-    model_config = SettingsConfigDict(
-        env_prefix="APP_",  # environment variables with APP_ prefix will override settings
-        env_nested_delimiter="__",  # APP_NESTED__NESTED_FIELD=value
-        json_encoders={Path: str},
-        toml_file=CONFIG_LOCATION,
-    )
-
-    @classmethod  # This is magic, required and I don't understand it
-    def settings_customise_sources(  # noqa: D102
-        cls,
-        settings_cls: type[BaseSettings],
-        init_settings: PydanticBaseSettingsSource,  # noqa: ARG003
-        env_settings: PydanticBaseSettingsSource,  # noqa: ARG003
-        dotenv_settings: PydanticBaseSettingsSource,  # noqa: ARG003
-        file_secret_settings: PydanticBaseSettingsSource,  # noqa: ARG003
-    ) -> tuple[PydanticBaseSettingsSource, ...]:
-        return (TomlConfigSettingsSource(settings_cls),)
 
     @model_validator(mode="after")
     def validate_config(self) -> Self:
@@ -152,3 +133,16 @@ Myrient Downloader {n + 1}:
 
         with CONFIG_LOCATION.open("w") as f:
             f.write(new_file_content_str)
+
+
+def load_config(config_path: Path) -> MyrDLConfig:
+    """Load the configuration file."""
+    import tomlkit
+
+    if not config_path.exists():
+        return MyrDLConfig()
+
+    with config_path.open("r") as f:
+        config = tomlkit.load(f)
+
+    return MyrDLConfig(**config)

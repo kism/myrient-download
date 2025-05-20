@@ -3,9 +3,8 @@
 import argparse
 from pathlib import Path
 
-import myrientdownload.config as myr_config
-
 from . import DESCRIPTION, PROGRAM_NAME, __version__
+from .config import load_config
 from .logger import get_logger, setup_logger
 from .myr_download import MyrDownloader
 
@@ -42,8 +41,7 @@ def main() -> None:
 
     config_path = Path(args.config).expanduser().resolve()
 
-    myr_config.CONFIG_LOCATION = config_path
-    config = myr_config.MyrDLConfigHandler()
+    config = load_config(config_path)
     if args.directory != "":
         config.download_dir = Path(args.directory)
     config.print_config_overview()
