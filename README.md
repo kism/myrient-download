@@ -66,3 +66,4 @@ Share Path/
 
 - TOSEC and friends
 - use config object for download_files
+- Better default config
