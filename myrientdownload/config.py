@@ -1,5 +1,6 @@
 """Config loading, setup, validating, writing."""
 
+import datetime
 import json
 from pathlib import Path
 from typing import Self
@@ -8,8 +9,6 @@ import tomlkit
 from colorama import Back, Fore, Style, init
 from pydantic import BaseModel, model_validator
 from pydantic_settings import BaseSettings
-
-import datetime
 
 from . import PROGRAM_NAME, URL, __version__
 from .helpers import wait_with_dots
