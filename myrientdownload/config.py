@@ -9,6 +9,8 @@ from colorama import Back, Fore, Style, init
 from pydantic import BaseModel, model_validator
 from pydantic_settings import BaseSettings
 
+import datetime
+
 from . import PROGRAM_NAME, URL, __version__
 from .helpers import wait_with_dots
 from .logger import get_logger
@@ -102,6 +104,8 @@ Myrient Downloader {n + 1}:
 
     def write_config(self, config_location: Path) -> None:
         """Write the current settings to a TOML file."""
+        config_location.parent.mkdir(parents=True, exist_ok=True)
+
         config_data = json.loads(self.model_dump_json())  # This is how we make the object safe for tomlkit
         if not config_location.exists():
             logger.warning("Config file does not exist, creating it at %s", config_location)
@@ -113,18 +117,12 @@ Myrient Downloader {n + 1}:
 
         logger.info("Writing config to %s", config_location)
 
-        # Write to the TOML file
-        if not config_location.parent.exists():
-            config_location.parent.mkdir(parents=True, exist_ok=True)
-
-        if not config_location.exists():
-            config_location.touch()
-
         new_file_content_str = f"# Configuration file for {PROGRAM_NAME} v{__version__} {URL}\n"
         new_file_content_str += tomlkit.dumps(config_data)
 
         if existing_data != config_data:  # The new object will be valid, so we back up the old one
-            backup_file = config_location.parent / f"{config_location.name}.bak"
+            time_str = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            backup_file = config_location.parent / f"{config_location.stem}_{time_str}{config_location.suffix}.bak"
             logger.warning("Validation has changed the config file, backing up the old one to %s", backup_file)
             with backup_file.open("w") as f:
                 f.write(tomlkit.dumps(existing_data))
