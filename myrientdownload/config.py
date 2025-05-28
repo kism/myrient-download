@@ -127,9 +127,11 @@ def load_config(config_path: Path) -> MyrDLConfig:
     import tomlkit
 
     if not config_path.exists():
+        logger.warning("Config file %s does not exist, creating a new one with default values.", config_path)
         return MyrDLConfig()
 
     with config_path.open("r") as f:
+        logger.info("Loading config from %s", config_path)
         config = tomlkit.load(f)
 
     return MyrDLConfig(**config)
