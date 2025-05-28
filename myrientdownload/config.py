@@ -47,14 +47,6 @@ class MyrDLConfig(BaseSettings):
     @model_validator(mode="after")
     def validate_config(self) -> Self:
         """Validate the settings after initialization."""
-        if not self.download_dir.exists():
-            logger.warning(
-                "Download directory '%s' does not exist. Creating it in 10 seconds.",
-                self.download_dir.resolve(),
-            )
-            wait_with_dots(10)  # Wait for 10 seconds to give the user a chance to cancel
-            self.download_dir.mkdir(parents=True, exist_ok=True)
-
         total_systems = [
             system for myrient_downloader in self.myrient_downloader for system in myrient_downloader.systems
         ]
