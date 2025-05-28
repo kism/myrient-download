@@ -201,7 +201,6 @@ test = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "pytest-random-order" },
-    { name = "tomlkit" },
 ]
 type = [
     { name = "mypy" },
@@ -229,7 +228,6 @@ test = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "pytest-random-order" },
-    { name = "tomlkit" },
 ]
 type = [
     { name = "mypy", specifier = ">=1.15.0" },

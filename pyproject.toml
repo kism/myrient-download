@@ -34,7 +34,6 @@ test = [
     "pytest-mock",
     "pytest-random-order",
     "detect-test-pollution",
-    "tomlkit",
 ]
 
 [tool.uv]
