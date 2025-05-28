@@ -65,4 +65,4 @@ Share Path/
 ## Todo
 
 - TOSEC and friends
-- Retry on failure
+- ~~Retry on failure~~

@@ -1,6 +1,7 @@
 """Download management for Myrinet files."""
 
 import logging
+import time
 import zipfile
 from pathlib import Path
 from typing import Self
@@ -217,8 +218,13 @@ class MyrDownloader(BaseModel):
             file_url = f"{base_url}{file_name}"
             logger.info("Downloading: %s", file_name)
             logger.debug("Downloading %s to: %s", file_url, output_file)
-            if self._download_file(file_url, output_file):
-                self._report_stat("downloaded")
+
+            for _ in range(3):
+                if self._download_file(file_url, output_file):
+                    self._report_stat("downloaded")
+                    break
+                time.sleep(5)
+                logger.warning("Retrying download for %s", file_name)
 
         self._reset_skipped_streak()
 
