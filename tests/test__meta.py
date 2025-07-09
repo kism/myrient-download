@@ -5,6 +5,7 @@ from pathlib import Path
 import tomlkit
 
 import myrientdownload
+from myrientdownload import DESCRIPTION, PROGRAM_NAME, URL
 
 
 def test_version_pyproject():
@@ -36,8 +37,6 @@ def test_init_pyproject_fields():
     pyproject_path = Path("pyproject.toml")
     with pyproject_path.open("rb") as f:
         pyproject_toml = tomlkit.load(f)
-
-    from myrientdownload import DESCRIPTION, PROGRAM_NAME, URL
 
     assert pyproject_toml["project"]["description"] == DESCRIPTION
 

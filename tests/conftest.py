@@ -1,3 +1,4 @@
+import argparse
 import shutil
 from pathlib import Path
 
@@ -44,7 +45,6 @@ def place_test_config():
 @pytest.fixture
 def no_argparse(monkeypatch, tmp_path):
     """Fixture to disable argparse."""
-    import argparse
 
     config_path = tmp_path / "config.toml"
 

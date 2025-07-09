@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import myrientdownload.logger
+from myrientdownload.logger import TRACE_LEVEL_NUM, _add_file_handler, _set_log_level
 
 
 @pytest.fixture
@@ -26,7 +27,6 @@ def logger() -> Generator:
 
 def test_logging_permissions_error(logger, tmp_path, mocker):
     """Test logging, mock a permission error."""
-    from myrientdownload.logger import _add_file_handler
 
     mock_open_func = mocker.mock_open(read_data="")
     mock_open_func.side_effect = PermissionError("Permission denied")
@@ -40,7 +40,6 @@ def test_logging_permissions_error(logger, tmp_path, mocker):
 
 def test_config_logging_to_dir(logger, tmp_path):
     """TEST: Correct exception is caught when you try log to a folder."""
-    from myrientdownload.logger import _add_file_handler
 
     with pytest.raises(IsADirectoryError):
         _add_file_handler(logger, tmp_path)
@@ -86,7 +85,6 @@ def test_handler_file_added(logger, tmp_path):
 )
 def test_set_log_level(log_level_in: str | int, log_level_expected: int, logger):
     """Test if _set_log_level results in correct log_level."""
-    from myrientdownload.logger import _set_log_level
 
     # TEST: Logger ends up with correct values
     _set_log_level(logger, log_level_in)
@@ -95,7 +93,6 @@ def test_set_log_level(log_level_in: str | int, log_level_expected: int, logger)
 
 def test_trace_level(logger, caplog):
     """Test trace level."""
-    from myrientdownload.logger import TRACE_LEVEL_NUM, _set_log_level
 
     _set_log_level(logger, "TRACE")
 

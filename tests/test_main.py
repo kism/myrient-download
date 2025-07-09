@@ -1,6 +1,8 @@
+from myrientdownload.__main__ import main
+
+
 def test_main_no_download(caplog, tmp_path, place_test_config, no_argparse, no_sleep):
     """Test the main function without downloading files."""
-    from myrientdownload.__main__ import main
 
     place_test_config("valid_no_systems.toml", tmp_path)
 
