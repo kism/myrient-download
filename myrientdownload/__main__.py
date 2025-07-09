@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from . import DESCRIPTION, PROGRAM_NAME, __version__
-from .config import load_config
+from .config import MyrDLConfig
 from .logger import get_logger, setup_logger
 from .myr_download import MyrDownloader
 
@@ -41,7 +41,7 @@ def main() -> None:
 
     config_path = Path(args.config).expanduser().resolve()
 
-    config = load_config(config_path)
+    config = MyrDLConfig.load_config(config_path)
     if args.directory != "":
         config.download_dir = Path(args.directory)
     config.print_config_overview()

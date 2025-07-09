@@ -7,8 +7,8 @@ from typing import Self
 
 import tomlkit
 from colorama import Back, Fore, Style, init
-from pydantic import BaseModel, model_validator
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from . import PROGRAM_NAME, URL, __version__
 from .helpers import wait_with_dots
@@ -20,6 +20,8 @@ init(autoreset=True)
 
 class MyrDLDownloaderConfig(BaseModel):
     """Settings for the Myrient downloader."""
+
+    model_config = ConfigDict(extra="allow")  # This is fine for config
 
     myrient_url: str = "https://myrient.erista.me/files"
     myrient_path: str = "No-Intro"  # Database name, see the website
@@ -37,6 +39,8 @@ class MyrDLDownloaderConfig(BaseModel):
 
 class MyrDLConfig(BaseSettings):
     """Settings loaded from a TOML file."""
+
+    model_config = SettingsConfigDict(extra="allow")  # This is fine for config
 
     # Default values for our settings
     myrient_downloader: list[MyrDLDownloaderConfig] = [MyrDLDownloaderConfig()]
@@ -121,17 +125,13 @@ Myrient Downloader {n + 1}:
         with config_location.open("w") as f:
             f.write(new_file_content_str)
 
+    @classmethod
+    def load_config(cls, config_path: Path) -> Self:
+        """Load the configuration file."""
+        if not config_path.exists():
+            return cls()
 
-def load_config(config_path: Path) -> MyrDLConfig:
-    """Load the configuration file."""
-    import tomlkit
+        with config_path.open("r") as f:
+            config = tomlkit.load(f)
 
-    if not config_path.exists():
-        logger.warning("Config file %s does not exist, creating a new one with default values.", config_path)
-        return MyrDLConfig()
-
-    with config_path.open("r") as f:
-        logger.info("Loading config from %s", config_path)
-        config = tomlkit.load(f)
-
-    return MyrDLConfig(**config)
+        return cls(**config)
