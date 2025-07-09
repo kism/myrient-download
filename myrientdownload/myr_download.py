@@ -142,15 +142,12 @@ class MyrDownloader(BaseModel):
 
             destination_temp.rename(destination)
 
-        except (
-            requests.exceptions.ConnectTimeout,
-            requests.exceptions.ReadTimeout,
-            requests.exceptions.ConnectionError,
-        ) as e:
+        except (requests.exceptions.RequestException, requests.exceptions.ChunkedEncodingError) as e:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.exception("Connection error: %s", url)
             else:
-                logger.error("%s: %s", e, url)  # noqa: TRY400 # logger.exception is too verbose, we don't need the stack trace for these exceptions
+                error_short = type(e).__name__
+                logger.error("%s: %s", error_short, url)  # noqa: TRY400 # logger.exception is too verbose, we don't need the stack trace for these exceptions
             self._report_stat("failed")
             return False
 
