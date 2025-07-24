@@ -177,6 +177,20 @@ class MyrDownloader(BaseModel):
         download_dir.mkdir(parents=True, exist_ok=True)
         return download_dir
 
+    def _check_zip_file(self, output_file: Path) -> None:
+        """Check if the zip file is valid."""
+        if output_file.suffix != ".zip":
+            logger.warning("File is not a zip: %s", output_file)
+
+        try:
+            with zipfile.ZipFile(output_file, "r") as zf:
+                zf.testzip()  # Test the zip file
+        except zipfile.BadZipFile:
+            logger.warning("Bad zip file: %s", output_file)
+            output_file.unlink()
+
+        self._report_stat("failed")
+
     def _download_files(
         self,
         filtered_files: list[str],
@@ -199,16 +213,8 @@ class MyrDownloader(BaseModel):
             output_file = download_dir / file_name
 
             # Check that zip file isn't completely cooked
-            if myr_downloader.verify_zips and output_file.is_file() and output_file.suffix == ".zip":
-                # This zip verification is not working
-                result = magic.from_file(output_file, mime=True)
-                logger.info("Checking zip file: %s (%s)", output_file, result)
-
-                try:
-                    zipfile.ZipFile(output_file, mode="r")
-                except zipfile.BadZipFile:
-                    logger.warning("Deleting broken zip file: %s", output_file)
-                    output_file.unlink()
+            if myr_downloader.verify_zips and output_file.is_file():
+                self._check_zip_file(output_file)
 
             if myr_downloader.skip_existing and output_file.exists():
                 logger.debug("Skipping %s - already exists", file_name)
@@ -235,12 +241,7 @@ class MyrDownloader(BaseModel):
                 time.sleep(5)
                 logger.warning("Retrying download for %s", file_name)
 
-            result = magic.from_file(output_file, mime=True)
-            if result != "application/zip":
-                logger.warning("Downloaded file is not a zip: %s (%s)", output_file, result)
-                output_file.unlink()
-                self._report_stat("failed")
-                continue
+            self._check_zip_file(output_file)
 
         self._reset_skipped_streak()
 
