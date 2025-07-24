@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Self
 from urllib.parse import quote  # Add this for URL encoding
 
-import magic
 import requests
 from colorama import Fore, Style, init
 from pydantic import BaseModel, model_validator
