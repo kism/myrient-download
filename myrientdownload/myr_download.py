@@ -126,12 +126,10 @@ class MyrDownloader(BaseModel):
         try:
             encoded_url = quote(url, safe=":/")
 
-            session = requests.Session()
-
             headers = HTTP_HEADERS.copy()
             headers["Referer"] = base_url  # Set the referer header to the URL being downloaded
 
-            response = session.get(encoded_url, headers=headers, stream=True, timeout=REQUESTS_TIMEOUT)
+            response = requests.get(encoded_url, headers=headers, stream=True, timeout=REQUESTS_TIMEOUT)
             response.raise_for_status()
 
             total_size = int(response.headers.get("content-length", 0))
