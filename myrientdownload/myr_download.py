@@ -11,6 +11,7 @@ import requests
 from colorama import Fore, Style, init
 from pydantic import BaseModel, model_validator
 from tqdm import tqdm
+import magic
 
 from .config import MyrDLConfig, MyrDLDownloaderConfig
 from .constants import FUN_TQDM_LOADING_BAR, HTTP_HEADERS, REQUESTS_TIMEOUT
@@ -192,11 +193,19 @@ class MyrDownloader(BaseModel):
 
             # Check that zip file isn't completely cooked
             if myr_downloader.verify_zips and output_file.exists() and str(output_file).endswith(".zip"):
-                try:
-                    zipfile.ZipFile(output_file)
-                except zipfile.BadZipFile:
-                    logger.warning("Deleting broken zip file: %s", output_file)
-                    output_file.unlink()
+                pass
+                # This zip verification is not working
+                # result = magic.from_file(output_file, mime=True)
+                # logger.info("Checking zip file: %s (%s)", output_file, result)
+
+                # try:
+                #     zipfile.ZipFile(output_file, mode="r")
+                # except zipfile.BadZipFile:
+                #     logger.warning("Deleting broken zip file: %s", output_file)
+                #     output_file.unlink()
+
+                # result = magic.from_file(output_file, mime=True)
+                # logger.info("Re-checking zip file: %s (%s)", output_file, result)
 
             if myr_downloader.skip_existing and output_file.exists():
                 logger.debug("Skipping %s - already exists", file_name)
@@ -222,6 +231,13 @@ class MyrDownloader(BaseModel):
                     break
                 time.sleep(5)
                 logger.warning("Retrying download for %s", file_name)
+
+            result = magic.from_file(output_file, mime=True)
+            if result != "application/zip":
+                logger.warning("Downloaded file is not a zip: %s (%s)", output_file, result)
+                output_file.unlink()
+                self._report_stat("failed")
+                continue
 
         self._reset_skipped_streak()
 
