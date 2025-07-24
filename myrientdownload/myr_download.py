@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Self
 from urllib.parse import quote  # Add this for URL encoding
 
+from http import HTTPStatus
+
 import requests
 from colorama import Fore, Style, init
 from pydantic import BaseModel, model_validator
@@ -122,12 +124,19 @@ class MyrDownloader(BaseModel):
 
     # region: Private download methods
 
-    def _download_file(self, url: str, destination: Path) -> bool:
+    def _download_file(self, url: str, destination: Path, base_url: str) -> bool:
         """Download an individual file."""
         try:
             encoded_url = quote(url, safe=":/")
-            response = requests.get(encoded_url, headers=HTTP_HEADERS, stream=True, timeout=REQUESTS_TIMEOUT)
+
+            session = requests.Session()
+
+            headers = HTTP_HEADERS.copy()
+            headers["Referer"] = base_url  # Set the referer header to the URL being downloaded
+
+            response = session.get(encoded_url, headers=headers, stream=True, timeout=REQUESTS_TIMEOUT)
             response.raise_for_status()
+
             total_size = int(response.headers.get("content-length", 0))
 
             destination_temp = destination.with_suffix(".part")
@@ -192,20 +201,16 @@ class MyrDownloader(BaseModel):
             output_file = download_dir / file_name
 
             # Check that zip file isn't completely cooked
-            if myr_downloader.verify_zips and output_file.exists() and str(output_file).endswith(".zip"):
-                pass
+            if myr_downloader.verify_zips and output_file.is_file() and output_file.suffix == ".zip":
                 # This zip verification is not working
-                # result = magic.from_file(output_file, mime=True)
-                # logger.info("Checking zip file: %s (%s)", output_file, result)
+                result = magic.from_file(output_file, mime=True)
+                logger.info("Checking zip file: %s (%s)", output_file, result)
 
-                # try:
-                #     zipfile.ZipFile(output_file, mode="r")
-                # except zipfile.BadZipFile:
-                #     logger.warning("Deleting broken zip file: %s", output_file)
-                #     output_file.unlink()
-
-                # result = magic.from_file(output_file, mime=True)
-                # logger.info("Re-checking zip file: %s (%s)", output_file, result)
+                try:
+                    zipfile.ZipFile(output_file, mode="r")
+                except zipfile.BadZipFile:
+                    logger.warning("Deleting broken zip file: %s", output_file)
+                    output_file.unlink()
 
             if myr_downloader.skip_existing and output_file.exists():
                 logger.debug("Skipping %s - already exists", file_name)
@@ -226,7 +231,7 @@ class MyrDownloader(BaseModel):
             logger.debug("Downloading %s to: %s", file_url, output_file)
 
             for _ in range(3):
-                if self._download_file(file_url, output_file):
+                if self._download_file(file_url, output_file, base_url):
                     self._report_stat("downloaded")
                     break
                 time.sleep(5)
