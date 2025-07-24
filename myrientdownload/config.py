@@ -26,7 +26,7 @@ class MyrDLDownloaderConfig(BaseModel):
     myrient_url: str = "https://myrient.erista.me/files"
     myrient_path: str = "No-Intro"  # Database name, see the website
     skip_existing: bool = True
-    verify_zips: bool = True  # Check existing zips are valid before skipping
+    verify_existing_zips: bool = False  # Check existing zips are valid before skipping
     systems: list[str] = [
         "Nintendo - Nintendo Entertainment System (Headered)",
         "Nintendo - Super Nintendo Entertainment System",
