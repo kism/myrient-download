@@ -7,13 +7,11 @@ from pathlib import Path
 from typing import Self
 from urllib.parse import quote  # Add this for URL encoding
 
-from http import HTTPStatus
-
+import magic
 import requests
 from colorama import Fore, Style, init
 from pydantic import BaseModel, model_validator
 from tqdm import tqdm
-import magic
 
 from .config import MyrDLConfig, MyrDLDownloaderConfig
 from .constants import FUN_TQDM_LOADING_BAR, HTTP_HEADERS, REQUESTS_TIMEOUT
