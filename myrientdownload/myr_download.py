@@ -210,8 +210,9 @@ class MyrDownloader(BaseModel):
             output_file = download_dir / file_name
 
             # Check that zip file isn't completely cooked
-            if myr_downloader.verify_zips and output_file.is_file():
+            if myr_downloader.verify_existing_zips and output_file.is_file():
                 self._check_zip_file(output_file)
+                print("v", end="")  # noqa: T201 # simple output for zip verification
 
             if myr_downloader.skip_existing and output_file.exists():
                 logger.debug("Skipping %s - already exists", file_name)
