@@ -234,7 +234,7 @@ class MyrDownloader(BaseModel):
             def magenta_str(s: str) -> str:
                 return f"{Fore.MAGENTA}{s}{Style.RESET_ALL}"
 
-            msg = f"{system} {magenta_str('@')}{n_files_processed}/{len(filtered_files)} {magenta_str('»')} {file_name}"
+            msg = f"{system} {magenta_str('@')}{n_files_processed + 1}/{len(filtered_files)} {magenta_str('»')} {file_name}"  # noqa: E501 This line can be long
             logger.info(msg)
 
             # Download the file
