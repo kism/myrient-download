@@ -37,6 +37,7 @@ class MyrDownloader(BaseModel):
         """Initialize the downloader with the given configuration."""
         super().__init__()
         self.config = config
+        self._need_newline = False
 
     @model_validator(mode="after")
     def _validate_config(self) -> Self:
@@ -61,6 +62,9 @@ class MyrDownloader(BaseModel):
 
     def _reset_skipped_streak(self) -> None:
         """Check if there was a streak of skipped files."""
+        if self._need_newline:
+            print()  # noqa: T201
+            self._need_newline = False
         if self.skip_streak > 0:
             logger.info("Skipped %d existing files", self.skip_streak)
             self.skip_streak = 0
@@ -212,7 +216,8 @@ class MyrDownloader(BaseModel):
             # Check that zip file isn't completely cooked
             if myr_downloader.verify_existing_zips and output_file.is_file():
                 self._check_zip_file(output_file)
-                print("v", end="")  # noqa: T201 # simple output for zip verification
+                self._need_newline = True
+                print(".", end="")  # noqa: T201 # simple output for zip verification
 
             if myr_downloader.skip_existing and output_file.exists():
                 logger.debug("Skipping %s - already exists", file_name)

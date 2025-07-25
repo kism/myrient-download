@@ -21,7 +21,7 @@ init(autoreset=True)
 class MyrDLDownloaderConfig(BaseModel):
     """Settings for the Myrient downloader."""
 
-    model_config = ConfigDict(extra="allow")  # This is fine for config
+    model_config = ConfigDict(extra="ignore")  # This is fine for config
 
     myrient_url: str = "https://myrient.erista.me/files"
     myrient_path: str = "No-Intro"  # Database name, see the website
@@ -40,7 +40,7 @@ class MyrDLDownloaderConfig(BaseModel):
 class MyrDLConfig(BaseSettings):
     """Settings loaded from a TOML file."""
 
-    model_config = SettingsConfigDict(extra="allow")  # This is fine for config
+    model_config = SettingsConfigDict(extra="ignore")  # This is fine for config
 
     # Default values for our settings
     myrient_downloader: list[MyrDLDownloaderConfig] = [MyrDLDownloaderConfig()]
@@ -86,7 +86,7 @@ Global Settings:
 Myrient Downloader {n + 1}:
   Resolved Myrinet URL: {str_magenta(f"{myr_downloader.myrient_url}/{str_magenta(myr_downloader.myrient_path)}")}
   {will_will_not(condition=myr_downloader.skip_existing, thing="skip existing files")}
-  {will_will_not(condition=myr_downloader.verify_zips, thing="verify existing zips")}
+  {will_will_not(condition=myr_downloader.verify_existing_zips, thing="verify existing zips")}
   Systems:
     {"\n    ".join(myr_downloader.systems)}
   System Allow List: {str_magenta(", ".join(myr_downloader.system_allow_list) if myr_downloader.system_allow_list else "<All>")}
