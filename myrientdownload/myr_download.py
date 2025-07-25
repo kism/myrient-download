@@ -178,10 +178,13 @@ class MyrDownloader(BaseModel):
         download_dir.mkdir(parents=True, exist_ok=True)
         return download_dir
 
-    def _check_zip_file(self, output_file: Path) -> None:
+    def _check_zip_file(self, output_file: Path, *, print_verification: bool = False) -> None:
         """Check if the zip file is valid."""
         if output_file.suffix != ".zip":
-            logger.warning("File is not a zip: %s", output_file)
+            logger.info("File is not a zip: %s", output_file)
+
+        if print_verification:
+            logger.info("Verifying zip file: %s", output_file)
 
         try:
             with zipfile.ZipFile(output_file, "r") as zf:
@@ -216,10 +219,12 @@ class MyrDownloader(BaseModel):
             # Check that zip file isn't completely cooked
             if myr_downloader.verify_existing_zips and output_file.is_file():
                 self._check_zip_file(output_file)
+                if self.skip_streak == 0:
+                    print("Verifying zips", end="")  # noqa: T201
                 self._need_newline = True
                 print(".", end="")  # noqa: T201 # simple output for zip verification
 
-            if myr_downloader.skip_existing and output_file.exists():
+            if output_file.exists():
                 logger.debug("Skipping %s - already exists", file_name)
                 self._report_stat("skipped")
                 continue
@@ -244,7 +249,7 @@ class MyrDownloader(BaseModel):
                 time.sleep(5)
                 logger.warning("Retrying download for %s", file_name)
 
-            self._check_zip_file(output_file)
+            self._check_zip_file(output_file, print_verification=True)
 
         self._reset_skipped_streak()
 

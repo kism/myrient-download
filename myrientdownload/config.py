@@ -25,7 +25,6 @@ class MyrDLDownloaderConfig(BaseModel):
 
     myrient_url: str = "https://myrient.erista.me/files"
     myrient_path: str = "No-Intro"  # Database name, see the website
-    skip_existing: bool = True
     verify_existing_zips: bool = False  # Check existing zips are valid before skipping
     systems: list[str] = [
         "Nintendo - Nintendo Entertainment System (Headered)",
@@ -85,7 +84,6 @@ Global Settings:
             msg += f"""
 Myrient Downloader {n + 1}:
   Resolved Myrinet URL: {str_magenta(f"{myr_downloader.myrient_url}/{str_magenta(myr_downloader.myrient_path)}")}
-  {will_will_not(condition=myr_downloader.skip_existing, thing="skip existing files")}
   {will_will_not(condition=myr_downloader.verify_existing_zips, thing="verify existing zips")}
   Systems:
     {"\n    ".join(myr_downloader.systems)}
