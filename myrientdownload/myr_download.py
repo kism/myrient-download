@@ -192,8 +192,7 @@ class MyrDownloader(BaseModel):
         except zipfile.BadZipFile:
             logger.warning("Bad zip file: %s", output_file)
             output_file.unlink()
-
-        self._report_stat("failed")
+            self._report_stat("failed")
 
     def _download_files(
         self,
