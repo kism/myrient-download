@@ -1,6 +1,6 @@
 [project]
 name = "myrientdownload"
-version = "1.0.13"
+version = "1.1.0"
 description = "A program to download files Myrient"
 authors = [
     { name = "Kieran Gee", email = "kieran.lost.the.game@gmail.com" },
@@ -12,11 +12,9 @@ requires-python = "~=3.12.0"
 dependencies = [
     "aiohttp>=3.13.3",
     "beautifulsoup4>=4.13.4",
-    "celery>=5.6.2",
     "colorama>=0.4.6",
     "pydantic>=2.11.4",
     "pydantic-settings>=2.9.1",
-    "requests>=2.32.3",
     "tomlkit>=0.13.2",
     "tqdm>=4.67.1",
     "uvloop>=0.22.1",
@@ -26,7 +24,6 @@ dependencies = [
 type = [
     "mypy>=1.15.0",
     "types-colorama>=0.4.15.20240311",
-    "types-requests>=2.32.0.20241016",
     "types-tqdm>=4.67.0.20250417",
 ]
 lint = ["ruff>=0.9.7"]
@@ -36,6 +33,7 @@ test = [
     "pytest-cov",
     "pytest-mock",
     "pytest-random-order",
+    "pytest-asyncio>=0.24",
     "detect-test-pollution",
 ]
 
