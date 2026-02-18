@@ -98,7 +98,6 @@ class MyrDownloader(BaseModel):
 
     async def download_from_system_list(self) -> None:
         """Download files from the list of systems in the configuration."""
-        print()  # noqa: T201
         logger.info("Starting download from Myrient...")
 
         async with aiohttp.ClientSession() as session:
@@ -108,7 +107,6 @@ class MyrDownloader(BaseModel):
 
             for myr_downloader in self.config.myrient_downloader:
                 for system in myr_downloader.systems:
-                    print()  # noqa: T201
                     system_url = f"{myr_downloader.myrient_url}/{myr_downloader.myrient_path}/{system}/"
                     fetch_tasks.append(get_files_list(session, system_url))
                     system_contexts.append(
@@ -166,7 +164,6 @@ class MyrDownloader(BaseModel):
             await asyncio.gather(*workers)
 
         self.print_stats()
-        print()  # noqa: T201
         logger.info("Download complete!")
 
     # endregion
