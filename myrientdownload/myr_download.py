@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Self
 from urllib.parse import quote
@@ -41,16 +41,50 @@ class _DownloadTask:
     myrient_path: str
 
 
+@dataclass
+class DownloadStats:
+    """Tracks and reports download statistics."""
+
+    skipped: int = 0
+    downloaded: int = 0
+    failed: int = 0
+    skip_streak: int = field(default=0, repr=False)
+
+    def report_skipped(self) -> None:
+        """Increment the skipped counter."""
+        self.skipped += 1
+        self.skip_streak += 1
+        logger.debug("Status: skipped")
+
+    def report_downloaded(self) -> None:
+        """Increment the downloaded counter."""
+        self.downloaded += 1
+        logger.debug("Status: downloaded")
+
+    def report_failed(self) -> None:
+        """Increment the failed counter."""
+        self.failed += 1
+        logger.debug("Status: failed")
+
+    def reset_skipped_streak(self) -> None:
+        """Log and reset the skipped streak counter."""
+        if self.skip_streak > 0:
+            logger.info("Skipped %d existing files", self.skip_streak)
+            self.skip_streak = 0
+
+    def print_stats(self) -> None:
+        """Print the download statistics."""
+        msg = "\nDownload statistics:"
+        for stat in ("skipped", "downloaded", "failed"):
+            msg += f"\n  {stat.capitalize()}: {getattr(self, stat)}"
+        logger.info(msg)
+
+
 class MyrDownloader(BaseModel):
     """Class to manage downloading files from Myrinet."""
 
     config: MyrDLConfig = MyrDLConfig()
-    stats: dict[str, int] = {
-        "skipped": 0,
-        "downloaded": 0,
-        "failed": 0,
-    }
-    skip_streak: int = 0
+    stats: DownloadStats = field(default_factory=DownloadStats)
 
     def __init__(self, config: MyrDLConfig) -> None:
         """Initialize the downloader with the given configuration."""
@@ -66,109 +100,90 @@ class MyrDownloader(BaseModel):
 
         return self
 
-    # region: Stats
-
-    def _report_stat(self, stat: str) -> None:
-        """Report the status of the download."""
-        if stat in self.stats:
-            self.stats[stat] += 1
-            logger.debug("Status: %s", stat)
-            if stat == "skipped":
-                self.skip_streak += 1
-        else:
-            logger.warning("Unknown stat: %s", stat)
-
-    def _reset_skipped_streak(self) -> None:
-        """Check if there was a streak of skipped files."""
-        if self.skip_streak > 0:
-            logger.info("Skipped %d existing files", self.skip_streak)
-            self.skip_streak = 0
-
-    def print_stats(self) -> None:
-        """Print the download statistics."""
-        msg = "\nDownload statistics:"
-        for stat, count in self.stats.items():
-            msg += f"\n  {stat.capitalize()}: {count}"
-
-        logger.info(msg)
-
-    # endregion
-
-    # region: Public download methods
+    # region Download methods
 
     async def download_from_system_list(self) -> None:
         """Download files from the list of systems in the configuration."""
         logger.info("Starting download from Myrient...")
 
         async with aiohttp.ClientSession() as session:
-            # Phase 1: fetch all file lists concurrently
-            fetch_tasks = []
-            system_contexts: list[_SystemContext] = []
+            system_contexts, all_file_lists = await self._fetch_file_lists(session)
+            await self._download_files(session, system_contexts, all_file_lists)
 
-            for myr_downloader in self.config.myrient_downloader:
-                for system in myr_downloader.systems:
-                    system_url = f"{myr_downloader.myrient_url}/{myr_downloader.myrient_path}/{system}/"
-                    fetch_tasks.append(get_files_list(session, system_url))
-                    system_contexts.append(
-                        _SystemContext(myr_downloader=myr_downloader, system=system, system_url=system_url)
-                    )
-
-            all_file_lists: list[list[str]] = list(await asyncio.gather(*fetch_tasks))
-
-            # Clean up leftover .part files before starting workers
-            seen_dirs: set[Path] = set()
-            for ctx in system_contexts:
-                d = self._get_download_dir(system=ctx.system, myrient_path=ctx.myr_downloader.myrient_path)
-                if d not in seen_dirs:
-                    seen_dirs.add(d)
-                    for part_file in d.glob("*.part"):
-                        logger.warning("Deleting incomplete file: %s", part_file)
-                        part_file.unlink()
-
-            # Phase 2: build download queue
-            queue: asyncio.Queue[_DownloadTask | None] = asyncio.Queue()
-
-            for ctx, files_list in zip(system_contexts, all_file_lists, strict=True):
-                if ctx.myr_downloader.game_allow_list == []:
-                    ctx.myr_downloader.game_allow_list = ["."]
-                filtered_files = [
-                    f
-                    for f in files_list
-                    if any(term in f for term in ctx.myr_downloader.game_allow_list)
-                    and not any(term in f for term in ctx.myr_downloader.game_disallow_list)
-                ]
-
-                if filtered_files:
-                    logger.info("Found %d matching files for %s", len(filtered_files), ctx.system)
-                    for file_name in filtered_files:
-                        await queue.put(
-                            _DownloadTask(
-                                file_name=file_name,
-                                base_url=ctx.system_url,
-                                system=ctx.system,
-                                myr_downloader=ctx.myr_downloader,
-                                myrient_path=ctx.myr_downloader.myrient_path,
-                            )
-                        )
-                else:
-                    logger.info("No matching files found for %s", ctx.system)
-
-            # Phase 3: spawn workers and drain the queue
-            workers = [
-                asyncio.create_task(self._download_worker(session, queue, worker_id=i)) for i in range(NUM_WORKERS)
-            ]
-            await queue.join()
-
-            for _ in range(NUM_WORKERS):
-                await queue.put(None)
-            await asyncio.gather(*workers)
-
-        self.print_stats()
+        self.stats.print_stats()
         logger.info("Download complete!")
 
-    # endregion
 
-    # region: Private download methods
+    async def _fetch_file_lists(
+        self, session: aiohttp.ClientSession
+    ) -> tuple[list[_SystemContext], list[list[str]]]:
+        """Fetch file lists for all systems concurrently."""
+        fetch_tasks = []
+        system_contexts: list[_SystemContext] = []
+
+        for myr_downloader in self.config.myrient_downloader:
+            for system in myr_downloader.systems:
+                system_url = f"{myr_downloader.myrient_url}/{myr_downloader.myrient_path}/{system}/"
+                fetch_tasks.append(get_files_list(session, system_url))
+                system_contexts.append(
+                    _SystemContext(myr_downloader=myr_downloader, system=system, system_url=system_url)
+                )
+
+        all_file_lists: list[list[str]] = list(await asyncio.gather(*fetch_tasks))
+        return system_contexts, all_file_lists
+
+    async def _download_files(
+        self,
+        session: aiohttp.ClientSession,
+        system_contexts: list[_SystemContext],
+        all_file_lists: list[list[str]],
+    ) -> None:
+        """Build the download queue and drain it with workers."""
+        # Clean up leftover .part files before starting workers
+        seen_dirs: set[Path] = set()
+        for ctx in system_contexts:
+            d = self._get_download_dir(system=ctx.system, myrient_path=ctx.myr_downloader.myrient_path)
+            if d not in seen_dirs:
+                seen_dirs.add(d)
+                for part_file in d.glob("*.part"):
+                    logger.warning("Deleting incomplete file: %s", part_file)
+                    part_file.unlink()
+
+        queue: asyncio.Queue[_DownloadTask | None] = asyncio.Queue()
+
+        for ctx, files_list in zip(system_contexts, all_file_lists, strict=True):
+            if ctx.myr_downloader.game_allow_list == []:
+                ctx.myr_downloader.game_allow_list = ["."]
+            filtered_files = [
+                f
+                for f in files_list
+                if any(term in f for term in ctx.myr_downloader.game_allow_list)
+                and not any(term in f for term in ctx.myr_downloader.game_disallow_list)
+            ]
+
+            if filtered_files:
+                logger.info("Found %d matching files for %s", len(filtered_files), ctx.system)
+                for file_name in filtered_files:
+                    await queue.put(
+                        _DownloadTask(
+                            file_name=file_name,
+                            base_url=ctx.system_url,
+                            system=ctx.system,
+                            myr_downloader=ctx.myr_downloader,
+                            myrient_path=ctx.myr_downloader.myrient_path,
+                        )
+                    )
+            else:
+                logger.info("No matching files found for %s", ctx.system)
+
+        workers = [
+            asyncio.create_task(self._download_worker(session, queue, worker_id=i)) for i in range(NUM_WORKERS)
+        ]
+        await queue.join()
+
+        for _ in range(NUM_WORKERS):
+            await queue.put(None)
+        await asyncio.gather(*workers)
 
     async def _download_worker(
         self,
@@ -203,10 +218,10 @@ class MyrDownloader(BaseModel):
 
         if output_file.exists():
             logger.debug("Skipping %s - already exists", task.file_name)
-            self._report_stat("skipped")
+            self.stats.report_skipped()
             return
 
-        self._reset_skipped_streak()
+        self.stats.reset_skipped_streak()
 
         def magenta_str(s: str) -> str:
             return f"{Fore.MAGENTA}{s}{Style.RESET_ALL}"
@@ -218,7 +233,7 @@ class MyrDownloader(BaseModel):
 
         for attempt in range(3):
             if await self._download_file(session, file_url, output_file, task.base_url, worker_id=worker_id):
-                self._report_stat("downloaded")
+                self.stats.report_downloaded()
                 break
             if attempt != 0:
                 await asyncio.sleep(5)
@@ -281,7 +296,7 @@ class MyrDownloader(BaseModel):
             else:
                 error_short = type(e).__name__
                 logger.error("%s: %s", error_short, url)  # noqa: TRY400
-            self._report_stat("failed")
+            self.stats.report_failed()
             return False
 
         return True
@@ -316,6 +331,5 @@ class MyrDownloader(BaseModel):
         except zipfile.BadZipFile:
             logger.warning("Bad zip file: %s", output_file)
             output_file.unlink()
-            self._report_stat("failed")
+            self.stats.report_failed()
 
-    # endregion
