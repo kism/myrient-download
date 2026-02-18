@@ -214,7 +214,7 @@ class MyrDownloader(BaseModel):
         def magenta_str(s: str) -> str:
             return f"{Fore.MAGENTA}{s}{Style.RESET_ALL}"
 
-        logger.info("%s %s %s %s", task.system, magenta_str("@"), magenta_str("»"), task.file_name)
+        logger.info("%s %s %s", task.system, magenta_str("»"), task.file_name)
 
         file_url = f"{task.base_url}{task.file_name}"
         logger.debug("Downloading %s to: %s", file_url, output_file)
