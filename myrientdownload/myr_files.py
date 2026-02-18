@@ -25,7 +25,7 @@ def get_files_list(url: str) -> list[str]:
         # Look for links in the table with id='list'
         table = soup.find("table", id="list")
         if table:
-            for link in table.find_all("a"):  # type: ignore[attr-defined] # God knows
+            for link in table.find_all("a"):
                 href = link.get("title")  # Use title instead of href
                 if href and href.endswith(".zip"):
                     files.append(href)
