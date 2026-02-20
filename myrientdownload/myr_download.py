@@ -1,13 +1,14 @@
 """Download management for Myrinet files."""
 
+import asyncio
 import logging
-import time
 import zipfile
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Self
-from urllib.parse import quote  # Add this for URL encoding
+from urllib.parse import quote
 
-import requests
+import aiohttp
 from colorama import Fore, Style, init
 from pydantic import BaseModel, model_validator
 from tqdm import tqdm
@@ -21,23 +22,74 @@ logger = get_logger(__name__)
 
 init()
 
+NUM_WORKERS = 3
+
+
+@dataclass
+class _SystemContext:
+    myr_downloader: MyrDLDownloaderConfig
+    system: str
+    system_url: str
+
+
+@dataclass
+class _DownloadTask:
+    file_name: str
+    base_url: str
+    system: str
+    myr_downloader: MyrDLDownloaderConfig
+    myrient_path: str
+
+
+@dataclass
+class DownloadStats:
+    """Tracks and reports download statistics."""
+
+    skipped: int = 0
+    downloaded: int = 0
+    failed: int = 0
+    skip_streak: int = field(default=0, repr=False)
+
+    def report_skipped(self) -> None:
+        """Increment the skipped counter."""
+        self.skipped += 1
+        self.skip_streak += 1
+        logger.debug("Status: skipped")
+
+    def report_downloaded(self) -> None:
+        """Increment the downloaded counter."""
+        self.downloaded += 1
+        logger.debug("Status: downloaded")
+
+    def report_failed(self) -> None:
+        """Increment the failed counter."""
+        self.failed += 1
+        logger.debug("Status: failed")
+
+    def reset_skipped_streak(self) -> None:
+        """Log and reset the skipped streak counter."""
+        if self.skip_streak > 0:
+            logger.info("Skipped %d existing files", self.skip_streak)
+            self.skip_streak = 0
+
+    def print_stats(self) -> None:
+        """Print the download statistics."""
+        msg = "\nDownload statistics:"
+        for stat in ("skipped", "downloaded", "failed"):
+            msg += f"\n  {stat.capitalize()}: {getattr(self, stat)}"
+        logger.info(msg)
+
 
 class MyrDownloader(BaseModel):
     """Class to manage downloading files from Myrinet."""
 
     config: MyrDLConfig = MyrDLConfig()
-    stats: dict[str, int] = {
-        "skipped": 0,
-        "downloaded": 0,
-        "failed": 0,
-    }
-    skip_streak: int = 0
+    stats: DownloadStats = field(default_factory=DownloadStats)
 
     def __init__(self, config: MyrDLConfig) -> None:
         """Initialize the downloader with the given configuration."""
         super().__init__()
         self.config = config
-        self._need_newline = False
 
     @model_validator(mode="after")
     def _validate_config(self) -> Self:
@@ -48,116 +100,203 @@ class MyrDownloader(BaseModel):
 
         return self
 
-    # region: Stats
+    # region Download methods
 
-    def _report_stat(self, stat: str) -> None:
-        """Report the status of the download."""
-        if stat in self.stats:
-            self.stats[stat] += 1
-            logger.debug("Status: %s", stat)
-            if stat == "skipped":
-                self.skip_streak += 1
-        else:
-            logger.warning("Unknown stat: %s", stat)
-
-    def _reset_skipped_streak(self) -> None:
-        """Check if there was a streak of skipped files."""
-        if self._need_newline:
-            print()  # noqa: T201
-            self._need_newline = False
-        if self.skip_streak > 0:
-            logger.info("Skipped %d existing files", self.skip_streak)
-            self.skip_streak = 0
-
-    def print_stats(self) -> None:
-        """Print the download statistics."""
-        msg = "\nDownload statistics:"
-        for stat, count in self.stats.items():
-            msg += f"\n  {stat.capitalize()}: {count}"
-
-        logger.info(msg)
-
-    # endregion
-
-    # region: Public download methods
-
-    def download_from_system_list(
-        self,
-    ) -> None:
+    async def download_from_system_list(self) -> None:
         """Download files from the list of systems in the configuration."""
-        print()  # noqa: T201 # Add a newline for better readability
-        logger.info("Starting download from Myrinet...")
+        logger.info("Starting download from Myrient...")
+
+        async with aiohttp.ClientSession() as session:
+            system_contexts, all_file_lists = await self._fetch_file_lists(session)
+            await self._download_files(session, system_contexts, all_file_lists)
+
+        self.stats.print_stats()
+        logger.info("Download complete!")
+
+
+    async def _fetch_file_lists(
+        self, session: aiohttp.ClientSession
+    ) -> tuple[list[_SystemContext], list[list[str]]]:
+        """Fetch file lists for all systems concurrently."""
+        fetch_tasks = []
+        system_contexts: list[_SystemContext] = []
 
         for myr_downloader in self.config.myrient_downloader:
             for system in myr_downloader.systems:
-                print()  # noqa: T201 # Add a newline for better readability
                 system_url = f"{myr_downloader.myrient_url}/{myr_downloader.myrient_path}/{system}/"
-                files_list = get_files_list(system_url)
+                fetch_tasks.append(get_files_list(session, system_url))
+                system_contexts.append(
+                    _SystemContext(myr_downloader=myr_downloader, system=system, system_url=system_url)
+                )
 
-                # Apply filters
-                if myr_downloader.game_allow_list == []:  # Small hack to allow all files if nothing is specified
-                    myr_downloader.game_allow_list = ["."]
-                filtered_files = [
-                    f
-                    for f in files_list
-                    if any(term in f for term in myr_downloader.game_allow_list)
-                    and not any(term in f for term in myr_downloader.game_disallow_list)
-                ]
+        all_file_lists: list[list[str]] = list(await asyncio.gather(*fetch_tasks))
+        return system_contexts, all_file_lists
 
-                if filtered_files:
-                    msg = f"Found {len(filtered_files)} matching files for {system}"
-                    logger.info(msg)
+    async def _download_files(
+        self,
+        session: aiohttp.ClientSession,
+        system_contexts: list[_SystemContext],
+        all_file_lists: list[list[str]],
+    ) -> None:
+        """Build the download queue and drain it with workers."""
+        # Clean up leftover .part files before starting workers
+        seen_dirs: set[Path] = set()
+        for ctx in system_contexts:
+            d = self._get_download_dir(system=ctx.system, myrient_path=ctx.myr_downloader.myrient_path)
+            if d not in seen_dirs:
+                seen_dirs.add(d)
+                for part_file in d.glob("*.part"):
+                    logger.warning("Deleting incomplete file: %s", part_file)
+                    part_file.unlink()
 
-                    self._download_files(
-                        filtered_files,
-                        system_url,
-                        myr_downloader=myr_downloader,
-                        system=system,
+        queue: asyncio.Queue[_DownloadTask | None] = asyncio.Queue()
+
+        for ctx, files_list in zip(system_contexts, all_file_lists, strict=True):
+            if ctx.myr_downloader.game_allow_list == []:
+                ctx.myr_downloader.game_allow_list = ["."]
+            filtered_files = [
+                f
+                for f in files_list
+                if any(term in f for term in ctx.myr_downloader.game_allow_list)
+                and not any(term in f for term in ctx.myr_downloader.game_disallow_list)
+            ]
+
+            if filtered_files:
+                logger.info("Found %d matching files for %s", len(filtered_files), ctx.system)
+                for file_name in filtered_files:
+                    await queue.put(
+                        _DownloadTask(
+                            file_name=file_name,
+                            base_url=ctx.system_url,
+                            system=ctx.system,
+                            myr_downloader=ctx.myr_downloader,
+                            myrient_path=ctx.myr_downloader.myrient_path,
+                        )
                     )
-                else:
-                    logger.info("No matching files found for %s", system)
+            else:
+                logger.info("No matching files found for %s", ctx.system)
 
-        self.print_stats()
-        print()  # noqa: T201 # Add a newline for better readability
-        logger.info("Download complete!")
+        workers = [
+            asyncio.create_task(self._download_worker(session, queue, worker_id=i)) for i in range(NUM_WORKERS)
+        ]
+        await queue.join()
 
-    # endregion
+        for _ in range(NUM_WORKERS):
+            await queue.put(None)
+        await asyncio.gather(*workers)
 
-    # region: Private download methods
+    async def _download_worker(
+        self,
+        session: aiohttp.ClientSession,
+        queue: asyncio.Queue[_DownloadTask | None],
+        *,
+        worker_id: int,
+    ) -> None:
+        """Worker coroutine that pulls tasks from the queue and downloads them."""
+        while True:
+            item = await queue.get()
+            try:
+                if item is None:
+                    return
+                await self._process_download_item(session, item, worker_id=worker_id)
+            finally:
+                queue.task_done()
 
-    def _download_file(self, url: str, destination: Path, base_url: str) -> bool:
+    async def _process_download_item(
+        self,
+        session: aiohttp.ClientSession,
+        task: _DownloadTask,
+        *,
+        worker_id: int,
+    ) -> None:
+        """Process a single download item: skip check, verify, download with retries."""
+        download_dir = self._get_download_dir(system=task.system, myrient_path=task.myrient_path)
+        output_file = download_dir / task.file_name
+
+        if task.myr_downloader.verify_existing_zips and output_file.is_file():
+            await asyncio.get_event_loop().run_in_executor(None, self._check_zip_file, output_file)
+
+        if output_file.exists():
+            logger.debug("Skipping %s - already exists", task.file_name)
+            self.stats.report_skipped()
+            return
+
+        self.stats.reset_skipped_streak()
+
+        def magenta_str(s: str) -> str:
+            return f"{Fore.MAGENTA}{s}{Style.RESET_ALL}"
+
+        logger.info("%s %s %s", task.system, magenta_str("»"), task.file_name)
+
+        file_url = f"{task.base_url}{task.file_name}"
+        logger.debug("Downloading %s to: %s", file_url, output_file)
+
+        for attempt in range(3):
+            if await self._download_file(session, file_url, output_file, task.base_url, worker_id=worker_id):
+                self.stats.report_downloaded()
+                break
+            if attempt != 0:
+                await asyncio.sleep(5)
+                logger.warning("Retrying download for %s", task.file_name)
+
+        if output_file.exists():
+            await asyncio.get_event_loop().run_in_executor(
+                None, lambda: self._check_zip_file(output_file, print_verification=True)
+            )
+
+    async def _download_file(
+        self,
+        session: aiohttp.ClientSession,
+        url: str,
+        destination: Path,
+        base_url: str,
+        *,
+        worker_id: int,
+    ) -> bool:
         """Download an individual file."""
         try:
             encoded_url = quote(url, safe=":/")
 
             headers = HTTP_HEADERS.copy()
-            headers["Referer"] = base_url  # Set the referer header to the URL being downloaded
+            headers["Referer"] = base_url
 
-            response = requests.get(encoded_url, headers=headers, stream=True, timeout=REQUESTS_TIMEOUT)
-            response.raise_for_status()
+            async with session.get(
+                encoded_url,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=REQUESTS_TIMEOUT),
+            ) as response:
+                response.raise_for_status()
 
-            total_size = int(response.headers.get("content-length", 0))
+                total_size = int(response.headers.get("Content-Length", 0))
+                destination_temp = destination.with_suffix(".part")
 
-            destination_temp = destination.with_suffix(".part")
-
-            with (
-                destination_temp.open("wb") as f,
-                tqdm(total=total_size, unit="iB", unit_scale=True, ascii=FUN_TQDM_LOADING_BAR, leave=False) as pbar,
-            ):
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        size = f.write(chunk)
-                        pbar.update(size)
+                with (
+                    destination_temp.open("wb") as f,
+                    tqdm(
+                        total=total_size,
+                        unit="iB",
+                        unit_scale=True,
+                        ascii=FUN_TQDM_LOADING_BAR,
+                        leave=False,
+                        position=worker_id,
+                        desc=destination.name[:30],
+                        disable=total_size < 100 * 1024 * 1024,
+                    ) as pbar,
+                ):
+                    async for chunk in response.content.iter_chunked(8192):
+                        if chunk:
+                            size = f.write(chunk)
+                            pbar.update(size)
 
             destination_temp.rename(destination)
 
-        except (requests.exceptions.RequestException, requests.exceptions.ChunkedEncodingError) as e:
+        except (aiohttp.ClientError, aiohttp.ClientPayloadError) as e:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.exception("Connection error: %s", url)
             else:
                 error_short = type(e).__name__
-                logger.error("%s: %s", error_short, url)  # noqa: TRY400 # logger.exception is too verbose, we don't need the stack trace for these exceptions
-            self._report_stat("failed")
+                logger.error("%s: %s", error_short, url)  # noqa: TRY400
+            self.stats.report_failed()
             return False
 
         return True
@@ -192,64 +331,5 @@ class MyrDownloader(BaseModel):
         except zipfile.BadZipFile:
             logger.warning("Bad zip file: %s", output_file)
             output_file.unlink()
-            self._report_stat("failed")
+            self.stats.report_failed()
 
-    def _download_files(
-        self,
-        filtered_files: list[str],
-        base_url: str,
-        myr_downloader: MyrDLDownloaderConfig,
-        *,
-        system: str = "",
-    ) -> None:
-        """Download files from Myrient based on the filtered list."""
-        # Create system-specific directory
-        download_dir = self._get_download_dir(system=system, myrient_path=myr_downloader.myrient_path)
-
-        # Remove any files that end with .part in the download directory
-        for part_file in download_dir.glob("*.part"):
-            logger.warning("Deleting incomplete file: %s", part_file)
-            part_file.unlink()
-
-        for n_files_processed, file_name in enumerate(filtered_files):
-            # Put files in their system directory
-            output_file = download_dir / file_name
-
-            # Check that zip file isn't completely cooked
-            if myr_downloader.verify_existing_zips and output_file.is_file():
-                self._check_zip_file(output_file)
-                if self.skip_streak == 0:
-                    print("Verifying zips", end="")  # noqa: T201
-                self._need_newline = True
-                print(".", end="")  # noqa: T201 # simple output for zip verification
-
-            if output_file.exists():
-                logger.debug("Skipping %s - already exists", file_name)
-                self._report_stat("skipped")
-                continue
-
-            self._reset_skipped_streak()
-
-            def magenta_str(s: str) -> str:
-                return f"{Fore.MAGENTA}{s}{Style.RESET_ALL}"
-
-            msg = f"{system} {magenta_str('@')}{n_files_processed + 1}/{len(filtered_files)} {magenta_str('»')} {file_name}"  # noqa: E501 This line can be long
-            logger.info(msg)
-
-            # Download the file
-            file_url = f"{base_url}{file_name}"
-            logger.info("Downloading: %s", file_name)
-            logger.debug("Downloading %s to: %s", file_url, output_file)
-
-            for _ in range(3):
-                if self._download_file(file_url, output_file, base_url):
-                    self._report_stat("downloaded")
-                    break
-                time.sleep(5)
-                logger.warning("Retrying download for %s", file_name)
-
-            self._check_zip_file(output_file, print_verification=True)
-
-        self._reset_skipped_streak()
-
-    # endregion

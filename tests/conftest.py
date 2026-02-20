@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import shutil
 from pathlib import Path
 
@@ -23,7 +24,11 @@ def myr_default_config(tmp_path, no_sleep) -> MyrDLDownloaderConfig:
 @pytest.fixture
 def no_sleep(monkeypatch):
     """Fixture to disable sleep."""
-    monkeypatch.setattr("time.sleep", lambda x: None)
+
+    async def _no_sleep(_seconds: float) -> None:
+        pass
+
+    monkeypatch.setattr(asyncio, "sleep", _no_sleep)
 
 
 @pytest.fixture

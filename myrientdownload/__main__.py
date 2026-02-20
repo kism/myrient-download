@@ -3,6 +3,8 @@
 import argparse
 from pathlib import Path
 
+import uvloop
+
 from . import DESCRIPTION, PROGRAM_NAME, __version__
 from .config import MyrDLConfig
 from .logger import get_logger, setup_logger
@@ -48,7 +50,7 @@ def main() -> None:
     config.write_config(config_path)  # Override the config post-validation
 
     mry_downloader = MyrDownloader(config)
-    mry_downloader.download_from_system_list()
+    uvloop.run(mry_downloader.download_from_system_list())
 
 
 if __name__ == "__main__":
