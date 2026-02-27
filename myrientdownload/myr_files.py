@@ -1,8 +1,8 @@
 """File wrangling for Myrient."""
 
-from urllib.parse import quote
+from urllib.parse import quote  # Add this for URL encoding
 
-import aiohttp
+import requests
 from bs4 import BeautifulSoup
 
 from .constants import HTTP_HEADERS, REQUESTS_TIMEOUT
@@ -11,26 +11,23 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 
-async def get_files_list(session: aiohttp.ClientSession, url: str) -> list[str]:
+def get_files_list(url: str) -> list[str]:
     """Get the list of files from the Myrient website."""
     logger.info("Getting file list from: %s", url)
     files = []
     try:
+        # Encode URL properly
         encoded_url = quote(url, safe=":/")
-        async with session.get(
-            encoded_url,
-            headers=HTTP_HEADERS,
-            timeout=aiohttp.ClientTimeout(total=REQUESTS_TIMEOUT),
-        ) as response:
-            response.raise_for_status()
-            text = await response.text()
+        response = requests.get(encoded_url, headers=HTTP_HEADERS, timeout=REQUESTS_TIMEOUT)
+        response.raise_for_status()
 
-        soup = BeautifulSoup(text, "html.parser")
+        soup = BeautifulSoup(response.text, "html.parser")
+        # Look for links in the table with id='list'
         table = soup.find("table", id="list")
         if table:
-            for link in table.find_all("a"):
-                href = link.get("title")
-                if isinstance(href, str) and href.endswith(".zip"):
+            for link in table.find_all("a"):  # type: ignore[attr-defined] # God knows
+                href = link.get("title")  # Use title instead of href
+                if href and href.endswith(".zip"):
                     files.append(href)
 
     except Exception:
