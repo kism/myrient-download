@@ -5,8 +5,9 @@ A Python script to download ROM files from Myrient's collection. The script allo
 ## Run
 
 Install with either pipx or uv
-
 `pipx install git+https://github.com/kism/myrient-download`
+
+`pipx install --python python3.12 git+https://github.com/kism/myrient-download`
 
 `uv tool install git+https://github.com/kism/myrient-download`
 
