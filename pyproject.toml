@@ -1,6 +1,6 @@
 [project]
 name = "myrientdownload"
-version = "1.0.12"
+version = "1.0.13"
 description = "A program to download files Myrient"
 authors = [
     { name = "Kieran Gee", email = "kieran.lost.the.game@gmail.com" },

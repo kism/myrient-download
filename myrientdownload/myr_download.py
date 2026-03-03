@@ -189,6 +189,9 @@ class MyrDownloader(BaseModel):
         try:
             with zipfile.ZipFile(output_file, "r") as zf:
                 zf.testzip()  # Test the zip file
+        except FileNotFoundError:
+            logger.warning("File not found for verification: %s", output_file)
+            self._report_stat("failed")
         except zipfile.BadZipFile:
             logger.warning("Bad zip file: %s", output_file)
             output_file.unlink()
