@@ -30,8 +30,6 @@ class MyrDLDownloaderConfig(BaseModel):
         "Nintendo - Nintendo Entertainment System (Headered)",
         "Nintendo - Super Nintendo Entertainment System",
     ]
-    system_allow_list: list[str] = []
-    system_disallow_list: list[str] = []
     game_allow_list: list[str] = ["(USA)"]
     game_disallow_list: list[str] = ["Demo", "BIOS", "(Proto)", "(Beta)", "(Program)"]
 
@@ -87,8 +85,6 @@ Myrient Downloader {n + 1}:
   {will_will_not(condition=myr_downloader.verify_existing_zips, thing="verify existing zips")}
   Systems:
     {"\n    ".join(myr_downloader.systems)}
-  System Allow List: {str_magenta(", ".join(myr_downloader.system_allow_list) if myr_downloader.system_allow_list else "<All>")}
-  System Disallow List: {str_magenta(", ".join(myr_downloader.system_disallow_list) if myr_downloader.system_disallow_list else "<None>")}
   Game Allow List: {str_magenta(", ".join(myr_downloader.game_allow_list) if myr_downloader.game_allow_list else "<All>")}
   Game Disallow List: {str_magenta(", ".join(myr_downloader.game_disallow_list) if myr_downloader.game_disallow_list else "<None>")}
 """  # noqa: E501 # Not going to do anything about a `"""`
